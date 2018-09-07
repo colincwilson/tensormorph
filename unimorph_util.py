@@ -3,9 +3,10 @@
 
 import pandas as pd
 import glob, re, sys
+from os import path
 
 # read unimorph schema
-schemafile = 'unimorph_schema.txt'
+schemafile = path.join(path.dirname(__file__), 'unimorph_schema.txt')
 schema = pd.read_table(schemafile, delimiter='\t')
 schema['Dimension'] = [x.lower() for x in schema['Dimension']]
 schema['Feature'] = [x.lower() for x in schema['Feature']]
