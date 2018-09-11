@@ -6,8 +6,6 @@ from tpr import *
 from seq_embedder import *
 from decoder import Decoder, LocalistDecoder
 from affixer import Affixer
-#from redup import Reduplicator
-from ensemble import EnsembleAffixer
 from entropy import binary_entropy
 from sklearn.model_selection import train_test_split
 import csv
@@ -39,7 +37,8 @@ def make_batch(dat, nbatch=20, debug=0, start_index=None):
 
     Stems = torch.zeros((nbatch, tpr.dfill, tpr.nrole))
     for i,stemi in enumerate(stems):
-        try: Stems[i,:,:] = seq_embedder.string2tpr(stemi, False)
+        try:
+            Stems[i,:,:] = seq_embedder.string2tpr(stemi, False)
         except:
             print 'error in embedding stem', stemi
             sys.exit(0)
@@ -73,21 +72,9 @@ def make_batch(dat, nbatch=20, debug=0, start_index=None):
 
 def get_accuracy(dat, affixer, decoder, exact_only=True):
     stems, morphs, targs, Stems, Morphs, Targs, targ_len = make_batch(dat, len(dat))
-    tpr.record = True
+    tpr.recorder = Recorder()
     output, _, _ = affixer(Stems, Morphs, max_len=tpr.nrole)
-    # save recordings for off-line visualization
-    stem_tpr    = affixer.recorder.record['stem_tpr'].select(0,0).data.numpy()
-    affix_tpr   = affixer.recorder.record['affix_tpr'].select(0,0).data.numpy()
-    stem_tpr    = np.clip(stem_tpr, 1.0e-8, 1.0e8)
-    affix_tpr   = np.clip(affix_tpr, 1.0e-8, 1.0e8)
-    np.save('/Users/colin/Desktop/writer_outputs/stem.npy', stem_tpr)
-    np.save('/Users/colin/Desktop/writer_outputs/affix.npy', affix_tpr)
-    writer_dump = affixer.combiner.writer.recorder.dump()
-    for x,y in writer_dump.items():
-        y = y.select(0,0).data.numpy()
-        y = np.clip(y, 1.0e-8, 1.0e8)
-        np.save('/Users/colin/Desktop/writer_outputs/' + x, y)
-
+    tpr.recorder.dump(save=1)
     pretty_print(affixer, Targs)
     output = decoder.decode(output)
     accuracy, avg_mismatch, n = 0.0, 0.0, len(dat)
@@ -122,22 +109,21 @@ def get_accuracy(dat, affixer, decoder, exact_only=True):
         return accuracy, accuracy_change, errors
     avg_mismatch = np.round(avg_mismatch / float(n), 3)
     #print errors
-    tpr.record = False
+    tpr.recorder = None
     return accuracy, accuracy_change, avg_mismatch, errors
 
 
 def pretty_print(affixer, targs, header='**root**'):
     print '\n'+header
-    record = dict(affixer.recorder.dump().items() +\
-         affixer.combiner.recorder.dump().items())
-    stem_tpr = tpr.decoder.decode(record['stem_tpr'])[0]
-    affix_tpr = tpr.decoder.decode(record['affix_tpr'])[0]
-    output = tpr.decoder.decode(record['output_tpr'])[0]
+    record = tpr.recorder.dump()
+    stem_tpr = tpr.decoder.decode(record['root-stem_tpr'])[0]
+    affix_tpr = tpr.decoder.decode(record['root-affix_tpr'])[0]
+    output = tpr.decoder.decode(record['root-output_tpr'])[0]
     targ = 'NA' if targs is None else tpr.seq_embedder.idvec2string(targs[0,:].data.numpy())
-    copy = record['copy'][0,:]
-    pivot = record['pivot'][0,:]
-    unpivot = record['unpivot'][0,:]
-    morph_indx = record['morph_indx'].data[0,:,0]
+    copy = record['root-copy'].data[0,:]
+    pivot = record['root-pivot'].data[0,:]
+    unpivot = record['root-unpivot'].data[0,:]
+    #morph_indx = record['root-morph_indx'].data[0,:,0]
 
     stem = tpr.seq_embedder.idvec2string(stem_tpr)
     stem_annotated = tpr.seq_embedder.idvec2string(stem_tpr, copy, pivot)
@@ -150,7 +136,7 @@ def pretty_print(affixer, targs, header='**root**'):
     print 'copy:', np.round(copy.data.numpy(), 2)
     print 'pivot:', np.round(pivot.data.numpy(), 2)
     print 'unpivot:', np.round(unpivot.data.numpy(), 2)
-    print 'morph_indx:', np.round(morph_indx.data.numpy(), 2)
+    #print 'morph_indx:', np.round(morph_indx.data.numpy(), 2)
 
     #if affixer.redup:
     #    pretty_print(affixer.affixer, None, header='**reduplicant**')
@@ -162,7 +148,7 @@ class Trainer():
         print 'Trainer.init()'
         self.redup, self.lr, self.dc, self.verbosity =\
         redup, lr, dc, verbosity
-        self.affixer = Affixer(redup); self.affixer.init()
+        self.affixer = Affixer(); self.affixer.init()
         #self.affixer = EnsembleAffixer(redup, True, 2); self.affixer.init()
         self.decoder = Decoder() if 0 else LocalistDecoder()
         tpr.decoder = self.decoder
@@ -247,7 +233,7 @@ class Trainer():
         train_acc = 0.0
         if (epoch % 50 == 0) and self.verbosity>0:
             print
-            tpr.record = True
+            tpr.recorder = Recorder()
             avg_loss = loss.item() / float(nbatch)
             #train_acc, errors = get_accuracy(train, affixer, decoder)
             train_acc, errors = None, None
@@ -263,7 +249,7 @@ class Trainer():
                 #print 'pivoter W1 =', affixer.pivoter.W1.weight.data.numpy()
                 #print 'pivoter bias1 =', affixer.pivoter.W1.bias.data.numpy()
                 #print 'pivoter a =', affixer.pivoter.a.data.numpy()
-            tpr.record = False
+            tpr.recorder = None
 
         # calculate gradient and update parameters
         if gradient_update:

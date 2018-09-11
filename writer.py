@@ -12,14 +12,13 @@
 
 import tpr
 from tpr import *
-from recorder import Recorder
 
 # xxx make version for localist roles
 class Writer(nn.Module):
-    def __init__(self):
+    def __init__(self, node='writer'):
         super(Writer, self).__init__()
         self.Y, self.attn_total = None, None
-        self.recorder = Recorder()
+        self.node = node
 
 
     # add a soft symbol/role binding to tpr Y
@@ -38,8 +37,8 @@ class Writer(nn.Module):
             (theta * delta + (1.0-theta)) * omega # accumluate attention to roles
         self.Y, self.attn_total = Y, attn_total
 
-        if tpr.record:
-            self.recorder.update_recording({
+        if tpr.recorder is not None:
+            tpr.recorder.update_values(self.node, {
                 'alpha':alpha,
                 'beta0':beta0,
                 'beta1':beta1,
@@ -72,4 +71,3 @@ class Writer(nn.Module):
     def init(self, nbatch):
         self.Y = torch.zeros(nbatch, tpr.dfill, tpr.drole, requires_grad=True)
         self.attn_total = torch.zeros(nbatch, tpr.drole)
-        self.recorder.init()

@@ -5,7 +5,6 @@ import tpr, radial_basis
 from tpr import *
 from radial_basis import GaussianPool
 from writer import Writer
-from recorder import Recorder
 
 # encapsulates main hierarchical attention logic of reading / writing
 # attention distributions are computed from gradient (scalar) indices 
@@ -14,12 +13,12 @@ from recorder import Recorder
 # - morpheme (stem vs. affix)
 # - ordinal position within morpheme (0, 1, ..., nrole-1)
 class Combiner(nn.Module):
-    def __init__(self):
+    def __init__(self, node='combiner'):
         super(Combiner, self).__init__()
         self.morph_attender = GaussianPool(2)
         self.posn_attender  = GaussianPool(tpr.nrole)
         self.writer = Writer()
-        self.recorder = Recorder()
+        self.node = node
 
 
     def forward(self, stem, affix, copy, pivot, unpivot, max_len):
@@ -27,7 +26,6 @@ class Combiner(nn.Module):
         morph_attender = self.morph_attender
         posn_attender  = self.posn_attender
         writer = self.writer
-        self.recorder.init()
         writer.init(nbatch)
 
         # initialize soft indices (all zeros)
@@ -52,8 +50,8 @@ class Combiner(nn.Module):
             # update tpr of output
             writer(stem, affix, alpha, beta0, beta1, omega, delta)
 
-            if tpr.record:
-                self.recorder.update_recording({
+            if tpr.recorder is not None:
+                tpr.recorder.update_values(self.node, {
                     'morph_indx':a,
                     'stem_indx':b0,
                     'affix_indx':b1,
