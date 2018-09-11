@@ -5,28 +5,33 @@ import tpr, radial_basis
 from tpr import *
 from radial_basis import GaussianPool
 from matcher import Matcher3
-from recorder import Recorder
 
 
 # combine results of scanning LR-> and <-RL
 class BiScanner(nn.Module):
-    def __init__(self, morpho_size=1, nfeature=5, bias=0.0):
+    def __init__(self, morpho_size=1, nfeature=5, node=''):
         super(BiScanner, self).__init__()
         self.morpho_size = morpho_size
         self.nfeature = nfeature
         # xxx get local role flag from tpr
-        self.scanner_LR = Scanner(morpho_size, nfeature, direction = 'LR->')
-        self.scanner_RL = Scanner(morpho_size, nfeature, direction = '<-RL')
+        self.scanner_LR = Scanner(morpho_size, nfeature, direction = 'LR->', node=node+'-LR')
+        self.scanner_RL = Scanner(morpho_size, nfeature, direction = '<-RL', node=node+'-RL')
         self.morph2a    = nn.Linear(morpho_size, 1, bias=True)
+        self.node = node
 
     def forward(self, stem, morpho):
         alpha = sigmoid(self.morph2a(morpho))
-        pivot_LR = self.scanner_LR(stem, morpho)
-        pivot_RL = self.scanner_RL(stem, morpho)
-        pivot = alpha * pivot_LR + (1.0 - alpha) * pivot_RL
+        scan_LR = self.scanner_LR(stem, morpho)
+        scan_RL = self.scanner_RL(stem, morpho)
+        pivot = alpha * scan_LR + (1.0 - alpha) * scan_RL
 
-        #if tpr.trace:
-        #    tpr.tracer.trace['alpha'] = np.round(alpha.data[0,:].numpy(), 2)
+        if tpr.recorder is not None:
+            tpr.recorder.set_values(self.node, {
+                'alpha':alpha,
+                'scan_LR':scan_LR,
+                'scan_RL':scan_RL,
+                'pivot':pivot
+            })
 
         return pivot
 
@@ -43,17 +48,18 @@ class BiScanner(nn.Module):
 # locate leftmost/rightmost/every instance of pattern -- assumes 
 # that role vectors are local so that LocalistMatcher is correct
 class Scanner(nn.Module):
-    def __init__(self, morpho_size, nfeature, direction='LR->'):
+    def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
         super(Scanner, self).__init__()
         self.morpho_size = morpho_size
         self.nfeature   = nfeature
         self.direction  = direction
-        self.matcher    = Matcher3(morpho_size, nfeature)
+        self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
         self.morph2u    = nn.Linear(morpho_size, 1, bias=False)
         if direction == 'LR->':
             self.start, self.end, self.step = 0, tpr.nrole, 1
         if direction == '<-RL':
             self.start, self.end, self.step = (tpr.nrole-1), -1, -1
+        self.node = node
     
     def forward(self, stem, morpho):
         start, end, step = self.start, self.end, self.step
@@ -67,6 +73,14 @@ class Scanner(nn.Module):
             p = match[:,i] * torch.exp(-u*h)
             h = p + (1.0-p) * h
             scan[:,i] = p
+
+        if tpr.recorder is not None:
+            tpr.recorder.set_values(self.node, {
+                'u':u,
+                'match':match,
+                'scan':scan
+            })
+
         return scan
 
 

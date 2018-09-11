@@ -16,6 +16,7 @@ from torch.nn import Parameter
 from torch.nn.functional import hardtanh, linear, log_softmax, relu, relu6, logsigmoid, softmax, softplus
 from torch.distributions import RelaxedBernoulli
 from torch import tanh, sigmoid
+from recorder import Recorder
 
 import numpy as np
 from numpy import linalg
@@ -30,7 +31,8 @@ def init(seq_embedder_, morph_embedder_):
     global nfill, nrole, dfill, drole, dmorph
     global tau_min
     global loss_func
-    global record
+    global recorder
+    global save_dir
     seq_embedder = seq_embedder_
     morph_embedder = morph_embedder_
     F, R, U = seq_embedder.F, seq_embedder.R, seq_embedder.U
@@ -41,7 +43,7 @@ def init(seq_embedder_, morph_embedder_):
     dmorph = morph_embedder.dmorph if morph_embedder is not None else 0
     tau_min = torch.zeros(1)+0.0
     loss_func = ['loglik', 'euclid'][0]
-    record = False
+    recorder = None
 
 
 # batch dot (inner) product

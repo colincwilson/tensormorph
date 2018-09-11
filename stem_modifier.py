@@ -7,12 +7,12 @@ from tpr import *
 from scanner import BiScanner
 from trimmer import BiTrimmer
 
-# stem modifier (as in Steriade, 1988)
+# stem modifier (after Steriade, 1988)
 class StemModifier(nn.Module):
-    def __init__(self, redup=False, root=True):
+    def __init__(self):
         super(StemModifier, self).__init__()
-        self.deleter = BiScanner(morpho_size = tpr.dmorph+2, nfeature = 5, bias = 0.0)
-        self.trimmer = BiTrimmer(morpho_size = tpr.dmorph+2, nfeature = 5, bias = 0.0)
+        self.deleter = BiScanner(morpho_size = tpr.dmorph+2, nfeature = 5, node = 'root-stem_modifier-deleter')
+        self.trimmer = BiTrimmer(morpho_size = tpr.dmorph+2, nfeature = 5)
         self.delete_gate = Parameter(torch.zeros(1))
         self.trim_gate = Parameter(torch.zeros(1))
 
