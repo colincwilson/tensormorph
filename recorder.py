@@ -28,11 +28,17 @@ class Recorder:
                 y = [yi.unsqueeze(1) for yi in y]
                 self.record[x] = torch.cat(y, dim=1)
         if save:
+            # save all recorded objects
             for x,y in self.record.iteritems():
-                y = np.clip(y.data.numpy(), 1.0e-8, 1.0e8)
+                y = np.clip(y.data.numpy(), -1.0e5, 1.0e5)
                 np.save(tpr.save_dir+'/'+x +'.npy', y)
-                #except:
-                #    print 'Could not save to', tpr.save_dir +'/'+ x +'.npy'
+            # write filler, role, unbinding matrices
+            np.save(tpr.save_dir+'/filler_matrix.npy', tpr.F)
+            np.save(tpr.save_dir+'/role_matrix.npy', tpr.R)
+            np.save(tpr.save_dir+'/unbind_matrix.npy', tpr.U)
+            # write symbols
+            syms = np.array(tpr.seq_embedder.syms)
+            np.savetxt(tpr.save_dir+'/symbols.txt', syms, fmt='%s')
         return self.record
 
     def init(self):
