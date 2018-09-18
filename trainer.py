@@ -27,7 +27,7 @@ def make_batch(dat, nbatch=20, debug=0, start_index=None):
     morph_embedder = tpr.morph_embedder
 
     if start_index is None: batch = dat.sample(nbatch)
-    else: batch = dat[start_index:(start_index+nbatch-1)]
+    else: batch = dat[start_index:(start_index+nbatch)]
 
     stems  = [x for x in batch['stem']]
     stems  = [string2delim(x) for x in stems]
@@ -71,13 +71,16 @@ def make_batch(dat, nbatch=20, debug=0, start_index=None):
 
 
 def get_accuracy(dat, affixer, decoder, exact_only=True):
-    stems, morphs, targs, Stems, Morphs, Targs, targ_len = make_batch(dat, len(dat))
+    stems, morphs, targs, Stems, Morphs, Targs, targ_len =\
+        make_batch(dat, nbatch=len(dat), start_index=0)
     tpr.recorder = Recorder()
     output, _, _ = affixer(Stems, Morphs, max_len=tpr.nrole)
-    tpr.recorder.dump(save=1)
     pretty_print(affixer, Targs)
     output = decoder.decode(output)
-    accuracy, avg_mismatch, n = 0.0, 0.0, len(dat)
+    dat['pred'] = [tpr.seq_embedder.idvec2string(x) for x in output]
+    tpr.recorder.dump(save=1, test=dat)
+    n = len(dat)
+    accuracy, avg_mismatch = 0.0, 0.0
     accuracy_change, n_change = 0.0, 0.0
     errors = []
     for i in xrange(n):

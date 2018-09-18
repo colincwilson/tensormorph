@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pandas as pd
 import torch, tpr, sys
 
 class Recorder:
@@ -22,7 +23,7 @@ class Recorder:
             else:
                 self.record[x].append(y.clone())
     
-    def dump(self, save=False):
+    def dump(self, save=False, test=None):
         for x,y in self.record.iteritems():
             if isinstance(y, list):
                 y = [yi.unsqueeze(1) for yi in y]
@@ -39,6 +40,9 @@ class Recorder:
             # write symbols
             syms = np.array(tpr.seq_embedder.syms)
             np.savetxt(tpr.save_dir+'/symbols.txt', syms, fmt='%s')
+            # write test forms
+            if test is not None:
+                test.to_csv(tpr.save_dir+'/test.csv', encoding='utf-8')
         return self.record
 
     def init(self):
