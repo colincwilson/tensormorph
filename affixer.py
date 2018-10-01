@@ -29,7 +29,8 @@ class Affixer(nn.Module):
         scan    = torch.zeros((nbatch,2)) # self.scanner(stem)
         morpho  = torch.cat([morph, scan], 1)
 
-        copy    = self.stem_modifier(stem, morpho)
+        copy    = self.stem_modifier(stem, morpho) if 0\
+                    else torch.ones((nbatch, tpr.nrole))
         pivot   = self.pivoter(stem, morpho)
         affix, unpivot = self.get_affix(stem, morpho, max_len)
 

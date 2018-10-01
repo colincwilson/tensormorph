@@ -13,6 +13,8 @@ class Thunker(nn.Module):
             nn.Linear(tpr.dmorph+2, tpr.dfill * tpr.drole, bias=True)
         self.morph2unpivot =\
             nn.Linear(tpr.dmorph+2, tpr.nrole, bias=True)
+        self.morph2affix.bias.data.fill_(-2.5)
+        self.morph2unpivot.bias.data.fill_(2.5)
 
     def forward(self, morpho):
         nbatch = morpho.shape[0]

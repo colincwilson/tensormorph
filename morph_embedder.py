@@ -14,7 +14,7 @@ from collections import Counter
 #from sklearn.decomposition import PCA
 import re, sys
 
-dummy = torch.ones(1)
+one = torch.ones(1)
 
 class MorphEmbedder():
     @staticmethod
@@ -81,7 +81,7 @@ class UnimorphEmbedder(MorphEmbedder):
         tags = tag2keyvalue(morph).split(';')
         tags = [x.split('=') for x in tags]
         tags = {x[0]:x[1] for x in tags}
-        embeds = [dummy,]
+        embeds = [one,]
         for dim in dims:
             lab = tags[dim] if dim in tags else None
             indx = -1 if lab is None else dim2labels[dim].index(lab)
@@ -148,7 +148,7 @@ class HebrewEmbedder(MorphEmbedder):
         tags = zip(dims, morph.split('+'))
         tags = [(x, re.sub('.*=', '', y)) for (x,y) in tags]
         tags = {x[0]:x[1] for x in tags}
-        embeds = [dummy,]
+        embeds = [one,]
         for dim in dims:
             lab = tags[dim] if dim in tags else None
             indx = 999 if lab is None else dim2labels[dim].index(lab)
@@ -186,7 +186,7 @@ class HindiEmbedder(MorphEmbedder):
         tags = zip(dims, morph.split(':'))
         tags = [(x, re.sub('.*=', '', y)) for (x,y) in tags]
         tags = {x[0]:x[1] for x in tags}
-        embeds = [dummy,]
+        embeds = [one,]
         for dim in dims:
             lab = tags[dim] if dim in tags else None
             indx = -1 if lab is None else dim2labels[dim].index(lab)
@@ -199,7 +199,7 @@ class DummyEmbedder(MorphEmbedder):
         self.dmorph = 1
 
     def embed(self, morph):
-        return dummy
+        return one
 
 
 # unit test

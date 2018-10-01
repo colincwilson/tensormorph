@@ -8,32 +8,32 @@ from matcher import Matcher3
 
 
 # combine results of scanning LR-> and <-RL
+# xxx get local role flag from tpr
 class BiScanner(nn.Module):
     def __init__(self, morpho_size=1, nfeature=5, node=''):
         super(BiScanner, self).__init__()
         self.morpho_size = morpho_size
         self.nfeature = nfeature
-        # xxx get local role flag from tpr
         self.scanner_LR = Scanner(morpho_size, nfeature, direction = 'LR->', node=node+'-LR')
         self.scanner_RL = Scanner(morpho_size, nfeature, direction = '<-RL', node=node+'-RL')
         self.morph2a    = nn.Linear(morpho_size, 1, bias=True)
         self.node = node
 
     def forward(self, stem, morpho):
-        alpha = sigmoid(self.morph2a(morpho))
         scan_LR = self.scanner_LR(stem, morpho)
         scan_RL = self.scanner_RL(stem, morpho)
-        pivot = alpha * scan_LR + (1.0 - alpha) * scan_RL
+        gate_LR = sigmoid(self.morph2a(morpho))
+        scan    = gate_LR * scan_LR + (1.0 - gate_LR) * scan_RL
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {
-                'alpha':alpha,
+                'gate_LR':gate_LR,
                 'scan_LR':scan_LR,
                 'scan_RL':scan_RL,
-                'pivot':pivot
+                'scan':scan
             })
 
-        return pivot
+        return scan
 
     def init(self):
         print 'BiScanner.init()'
@@ -54,7 +54,7 @@ class Scanner(nn.Module):
         self.nfeature   = nfeature
         self.direction  = direction
         self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
-        self.morph2u    = nn.Linear(morpho_size, 1, bias=False)
+        self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
         if direction == 'LR->':
             self.start, self.end, self.step = 0, tpr.nrole, 1
         if direction == '<-RL':
@@ -64,11 +64,13 @@ class Scanner(nn.Module):
     def forward(self, stem, morpho):
         start, end, step = self.start, self.end, self.step
         nbatch, nrole = stem.shape[0], tpr.nrole
-        u = torch.exp(self.morph2u(morpho)).squeeze(-1)
+        u = torch.exp(self.morph2u(morpho) - 2.5).squeeze(-1)
+        #u = torch.zeros(nbatch)
 
-        match = self.matcher(stem, morpho)
-        scan = torch.zeros((nbatch, nrole), requires_grad=True).clone()
-        h = torch.zeros(nbatch, requires_grad=True)
+        match   = self.matcher(stem, morpho)
+        #log_match = torch.log(match) # xxx change return value of matcher xxx watch out for masking!
+        scan    = torch.zeros((nbatch, nrole), requires_grad=True).clone()
+        h       = torch.zeros(nbatch, requires_grad=True)
         for i in xrange(start, end, step):
             p = match[:,i] * torch.exp(-u*h)
             h = p + (1.0-p) * h

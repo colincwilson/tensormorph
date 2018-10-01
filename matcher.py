@@ -28,7 +28,12 @@ class Matcher3(nn.Module):
         # mask out match results for epsilon fillers
         mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0).squeeze(1) # detach?
         match = match * mask
-        assert(np.all(match.data.numpy() >= 0.0))
+        try:
+            assert(np.all(0.0 <= match.data.numpy()))
+            assert(np.all(match.data.numpy() <= 1.0))
+        except AssertionError as e:
+            print match.data.numpy()
+            raise
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {
@@ -65,22 +70,25 @@ class Matcher(nn.Module):
         return log_match
 
 
-# matcher with attention weights as in GCM (Nosofsky 1986), 
-# ALCOVE (Kruschke 1991), etc. after Shepard (1962, 1987)
+# attention-weighted euclidean distance matcher  
+# see GCM (Nosofsky 1986), ALCOVE (Kruschke 1991), etc. 
+# after Shepard (1962, 1987)
 class MatcherGCM(nn.Module):
     def __init__(self, morpho_size, nfeature, node=''):
         super(MatcherGCM, self).__init__()
-        self.morph2a = nn.Linear(morpho_size, nfeature, bias=True)
         self.morph2w = nn.Linear(morpho_size, nfeature, bias=True)
+        self.morph2a = nn.Linear(morpho_size, nfeature, bias=True)
         self.morph2c = nn.Linear(morpho_size, 1, bias=True)
         self.nfeature = nfeature
         self.node = node
     
     def forward(self, X, morpho):
+        # feature specifications in [-1,+1]
+        w = tanh(self.morph2w(morpho)).unsqueeze(2)
         # attention weights in [0,1]
         a = sigmoid(self.morph2a(morpho)).unsqueeze(2)
-        # specified values in [-1,+1]
-        w = tanh(self.morph2w(morpho)).unsqueeze(2)
+        #a = torch.abs(w)
+        #a = torch.pow(w, 2.0)
         # sensitivity > 0
         c = torch.exp(self.morph2c(morpho))
         k = self.nfeature
@@ -88,11 +96,16 @@ class MatcherGCM(nn.Module):
         if tpr.random_roles:
             # distributed roles -> local roles
             X = torch.bmm(X, tpr.U)
-        #score = torch.abs(X.narrow(1,0,k) - w)
+        #print X.narrow(1,0,k).shape, w.shape, a.shape
+        #print w[0,:,:]
+        #print a[0,:,:]
         score = torch.pow(X.narrow(1,0,k) - w, 2.0)
         score = torch.sum(a * score, 1)
         score = torch.pow(score, 0.5)
         log_match = -c * score
+        #print log_match[0,:]
+        #print torch.exp(log_match[0,:])
+        #sys.exit(0)
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {

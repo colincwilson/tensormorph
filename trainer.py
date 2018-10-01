@@ -139,6 +139,9 @@ def pretty_print(affixer, targs, header='**root**'):
     print 'copy:', np.round(copy.data.numpy(), 2)
     print 'pivot:', np.round(pivot.data.numpy(), 2)
     print 'unpivot:', np.round(unpivot.data.numpy(), 2)
+
+    # print affix tpr, etc.
+    #print np.round(record['root-affix_tpr'][0,:,:].detach().numpy(), 2)
     #print 'morph_indx:', np.round(morph_indx.data.numpy(), 2)
 
     #if affixer.redup:
@@ -147,7 +150,7 @@ def pretty_print(affixer, targs, header='**root**'):
 
 
 class Trainer():
-    def __init__(self, redup=False, lr=0.1, dc=0.0, verbosity=1):
+    def __init__(self, redup=False, lr=0.10, dc=0.0, verbosity=1):
         print 'Trainer.init()'
         self.redup, self.lr, self.dc, self.verbosity =\
         redup, lr, dc, verbosity
@@ -163,7 +166,8 @@ class Trainer():
         self.decoder_optim = optimizer(self.decoder.parameters(), lr, dc)
         self.criterion = nn.CrossEntropyLoss(ignore_index=0, reduction='none')\
                         if tpr.loss_func=='loglik' else nn.MSELoss(reduction='none')
-        self.regularizer = nn.MSELoss()
+        #self.regularizer = nn.MSELoss()
+        self.regularizer = nn.L1Loss(size_average=False)
 
     def train_and_test(self, train, test, nbatch, max_epochs):
         affixer, decoder = self.affixer, self.decoder
@@ -226,12 +230,14 @@ class Trainer():
                         else self.euclid_loss(output, targs, max_len)
 
         # regularize affix toward epsilon
-        loss += 1.0e-3 * regularizer(affix, torch.zeros_like(affix))
+        lambda_reg = 1.0e-5
+        loss    += lambda_reg * regularizer(affix, torch.zeros_like(affix))
+        #output  += lambda_reg * regularizer(output, torch.zeros_like(output))
 
         # regularize pivot, copy, unpivot toward extremes (min-entropy)
-        loss += 1.0e-3 * binary_entropy(pivot).sum()
-        loss += 1.0e-3 * binary_entropy(unpivot).sum()
-        loss += 1.0e-3 * binary_entropy(copy).sum()
+        #loss += lambda_reg * binary_entropy(pivot).sum()
+        #loss += lambda_reg * binary_entropy(unpivot).sum()
+        #loss += lambda_reg * binary_entropy(copy).sum()
 
         train_acc = 0.0
         if (epoch % 50 == 0) and self.verbosity>0:
