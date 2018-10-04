@@ -61,7 +61,7 @@ class LocalistDecoder(nn.Module):
         eps = self.eps
         dist = euclid_squared_batch(T, tpr.F)
         sim = -tau*dist + eps
-        if self.debug: # check against generic decoder
+        if self.debug: # verify against generic decoder
             sim_ = self.decoder(T)
             print sim[0,:,0]
             print sim_[0,:,0]

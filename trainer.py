@@ -141,7 +141,10 @@ def pretty_print(affixer, targs, header='**root**'):
     print 'unpivot:', np.round(unpivot.data.numpy(), 2)
 
     # print affix tpr, etc.
-    #print np.round(record['root-affix_tpr'][0,:,:].detach().numpy(), 2)
+    print np.round(record['root-affix_tpr'].data[0,:,0].numpy(), 2)
+    print np.round(record['root-affix_tpr'].data[0,:,1].numpy(), 2)
+    print np.round(record['root-output_tpr'].data[0,:,0].numpy(), 2)
+    print np.round(record['root-output_tpr'].data[0,:,1].numpy(), 2)
     #print 'morph_indx:', np.round(morph_indx.data.numpy(), 2)
 
     #if affixer.redup:
