@@ -26,7 +26,7 @@ class Matcher3(nn.Module):
         # multiplicative (log-linear) combination of matcher outputs
         match = torch.exp(log_match_prev + log_match_cntr + log_match_next)
         # mask out match results for epsilon fillers
-        mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0).squeeze(1) # detach?
+        mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0).squeeze(1).detach()
         match = match * mask
         try:
             assert(np.all(0.0 <= match.data.numpy()))

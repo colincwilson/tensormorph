@@ -41,7 +41,7 @@ def init(seq_embedder_, morph_embedder_):
     nfill, nrole = seq_embedder.nfill, seq_embedder.nrole
     dfill, drole = seq_embedder.dfill, seq_embedder.drole
     dmorph = morph_embedder.dmorph if morph_embedder is not None else 0
-    tau_min = torch.zeros(1)+0.0
+    tau_min = torch.zeros(1) + 0.0
     loss_func = ['loglik', 'euclid'][0]
     recorder = None
 
