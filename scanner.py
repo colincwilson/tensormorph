@@ -64,7 +64,7 @@ class Scanner(nn.Module):
     def forward(self, stem, morpho):
         start, end, step = self.start, self.end, self.step
         nbatch, nrole = stem.shape[0], tpr.nrole
-        u = torch.exp(self.morph2u(morpho) - 2.5).squeeze(-1)
+        u = torch.exp(self.morph2u(morpho) - 0.0).squeeze(-1)
         #u = torch.zeros(nbatch)
 
         match   = self.matcher(stem, morpho)

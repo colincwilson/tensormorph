@@ -25,16 +25,16 @@ class Writer(nn.Module):
     #   a is soft index into morphs (M0, M1)
     #   b0, b1 are soft positions within M0, M1
     #   c is soft position within output Y
-    def forward(self, M0, M1, alpha, beta0, beta1, omega, delta):
+    def forward(self, M0, M1, alpha, beta0, beta1, omega, delta0, delta1):
         Y, attn_total = self.Y, self.attn_total
         theta = alpha[:,0].unsqueeze(1)       # attention to morph M0 or M1
         x0    = attn2filler_batch(M0, beta0)  # soft filler in M0 at soft index beta0
         x1    = attn2filler_batch(M1, beta1)  # soft filler in M1 at soft index beta1
-        x     = theta * delta * x0 + (1.0-theta) * x1 # convex combo of soft fillers
+        x     = theta * delta0 * x0 + (1.0-theta) * delta1 * x1 # convex combo of soft fillers
         r     = attn2role_batch(omega)        # soft role corresponding to soft index omega
         Y     = torch.baddbmm(Y, x.unsqueeze(2), r.unsqueeze(1))   # accumulate binding into output
         attn_total = attn_total +\
-            (theta * delta + (1.0-theta)) * omega # accumluate attention to roles
+            (theta * delta0 + (1.0-theta) * delta1) * omega # accumluate attention to output roles
         self.Y, self.attn_total = Y, attn_total
 
         if tpr.recorder is not None:
@@ -43,7 +43,8 @@ class Writer(nn.Module):
                 'beta0':beta0,
                 'beta1':beta1,
                 'omega':omega,
-                'delta':delta,
+                'delta0':delta0,
+                'delta1':delta1,
                 'output':Y
             })
 

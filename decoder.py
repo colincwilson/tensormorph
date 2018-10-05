@@ -14,6 +14,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.tau = Parameter(torch.ones(1)*tau) if tau\
               else Parameter(torch.zeros(1))
+        #self.tau = Parameter(torch.zeros(1), requires_grad=False)  # xxx clamped precision
         self.eps = torch.zeros(1)+1.0e-8
         self.debug = 0
 
@@ -52,6 +53,7 @@ class LocalistDecoder(nn.Module):
         super(LocalistDecoder, self).__init__()
         self.tau = Parameter(torch.ones(1)*tau) if tau\
               else Parameter(torch.zeros(1))
+        #self.tau = Parameter(torch.zeros(1), requires_grad=False)  # xxx clamped precision
         self.eps = torch.zeros(1)+1.0e-8
         self.debug = 0
         self.decoder = Decoder() if self.debug else None

@@ -25,6 +25,7 @@ class Thunker(nn.Module):
         # tpr of affix directly
         affix = self.morph2affix(morpho).view(nbatch, tpr.dfill, tpr.drole)
         affix = sigmoid(affix) # restrict learned affix components to [0,1]
+        #affix = tpr.seq_embedder.string2tpr('u m', False).unsqueeze(0).expand(nbatch, tpr.dfill, tpr.drole)   # xxx testing
         #affix = tanh(affix) # restrict learned affix components to [-1, +1]
         #affix  = tanh(PReLu(affix)) # restrict learned affix components to [0,1]
         #affix = bound_batch(affix)

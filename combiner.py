@@ -42,13 +42,14 @@ class Combiner(nn.Module):
             omega = posn_attender(c)
 
             # get copy, pivot, unpivot probabilities at current stem and affix positions
-            theta       = alpha[:,0].unsqueeze(1)
-            theta_stem  = dot_batch(pivot, beta0)
-            theta_affix = dot_batch(unpivot, beta1)
-            delta       = dot_batch(copy, beta0)
+            theta   = alpha[:,0].unsqueeze(1)
+            theta0  = dot_batch(pivot, beta0)
+            theta1  = dot_batch(unpivot, beta1)
+            delta0  = dot_batch(copy, beta0)
+            delta1  = dot_batch(affix.narrow(1,0,1).squeeze(1), beta1) # xxx provisional
 
             # update tpr of output
-            writer(stem, affix, alpha, beta0, beta1, omega, delta)
+            writer(stem, affix, alpha, beta0, beta1, omega, delta0, delta1)
 
             if tpr.recorder is not None:
                 tpr.recorder.update_values(self.node, {
@@ -56,18 +57,18 @@ class Combiner(nn.Module):
                     'stem_indx':b0,
                     'affix_indx':b1,
                     'output_indx':c,
-                    'pivot_prob':theta_stem,
-                    'unpivot_prob':theta_affix
+                    'pivot_prob':theta0,
+                    'unpivot_prob':theta1
                     })
 
             # update stem/affix selection and position within each morph
             # - switch morph at (un)pivot points, else stay
-            a  = a + theta * theta_stem - (1.0 - theta) * theta_affix
+            a  = a + theta * theta0 - (1.0 - theta) * theta1
             # - convex combos of advance within each morpheme and stay
             b0 = (1.0 - theta) * b0 + theta * (b0 + 1.0)
             b1 = theta * b1 + (1.0 - theta) * (b1 + 1.0)
             # - advance within output only if have copied from stem or affix
-            c  = c + theta * delta + (1.0 - theta)
+            c  = c + theta * delta0 + (1.0 - theta) * delta1
             # xxx reset affix position to 0 after unpivot (allowing for multiple affixation)
             #reset_affix = (1.0-theta)*theta2
             #x_affix = reset_affix*0.0 + (1.0-reset_affix)*x_affix

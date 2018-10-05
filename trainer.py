@@ -119,33 +119,38 @@ def get_accuracy(dat, affixer, decoder, exact_only=True):
 def pretty_print(affixer, targs, header='**root**'):
     print '\n'+header
     record = tpr.recorder.dump()
-    stem_tpr = tpr.decoder.decode(record['root-stem_tpr'])[0]
-    affix_tpr = tpr.decoder.decode(record['root-affix_tpr'])[0]
+    stem = tpr.decoder.decode(record['root-stem_tpr'])[0]
+    affix = tpr.decoder.decode(record['root-affix_tpr'])[0]
     output = tpr.decoder.decode(record['root-output_tpr'])[0]
-    targ = 'NA' if targs is None else tpr.seq_embedder.idvec2string(targs[0,:].data.numpy())
+    targ_segs = 'NA' if targs is None else\
+        tpr.seq_embedder.idvec2string(targs[0,:].data.numpy())
     copy = record['root-copy'].data[0,:]
     pivot = record['root-pivot'].data[0,:]
     unpivot = record['root-unpivot'].data[0,:]
     #morph_indx = record['root-morph_indx'].data[0,:,0]
 
-    stem = tpr.seq_embedder.idvec2string(stem_tpr)
-    stem_annotated = tpr.seq_embedder.idvec2string(stem_tpr, copy, pivot)
-    affix_annotated = tpr.seq_embedder.idvec2string(affix_tpr, None, unpivot)
-    output = tpr.seq_embedder.idvec2string(output)
+    stem_segs = tpr.seq_embedder.idvec2string(stem)
+    stem_annotated = tpr.seq_embedder.idvec2string(stem, copy, pivot)
+    affix_annotated = tpr.seq_embedder.idvec2string(affix, None, unpivot)
+    output_segs = tpr.seq_embedder.idvec2string(output)
 
-    print stem, u'    ', targ, u'    ', output
+    print stem_segs, u'    ', targ_segs, u'    ', output_segs
     print 'annotated stem:', stem_annotated
     print 'annotated affix:', affix_annotated
     print 'copy:', np.round(copy.data.numpy(), 2)
     print 'pivot:', np.round(pivot.data.numpy(), 2)
     print 'unpivot:', np.round(unpivot.data.numpy(), 2)
 
-    # print affix tpr, etc.
-    print np.round(record['root-affix_tpr'].data[0,:,0].numpy(), 2)
-    print np.round(record['root-affix_tpr'].data[0,:,1].numpy(), 2)
-    print np.round(record['root-output_tpr'].data[0,:,0].numpy(), 2)
-    print np.round(record['root-output_tpr'].data[0,:,1].numpy(), 2)
-    #print 'morph_indx:', np.round(morph_indx.data.numpy(), 2)
+    if 0: # print affix tpr, etc.
+        print np.round(record['root-affix_tpr'].data[0,:,0].numpy(), 2)
+        print np.round(record['root-affix_tpr'].data[0,:,1].numpy(), 2)
+        print np.round(record['root-output_tpr'].data[0,:,0].numpy(), 2)
+        print np.round(record['root-output_tpr'].data[0,:,1].numpy(), 2)
+    
+    output_prob = tpr.decoder(record['root-output_tpr'])
+    output_prob = torch.exp(log_softmax(output_prob, 1))
+    print np.round(output_prob.data[0,:,1].numpy(), 3)
+        #print 'morph_indx:', np.round(morph_indx.data.numpy(), 2)
 
     #if affixer.redup:
     #    pretty_print(affixer.affixer, None, header='**reduplicant**')
@@ -185,8 +190,10 @@ class Trainer():
 
         # accuracy on test and train data
         print 'evaluating ...'
-        train_acc, train_acc_change, train_dist, train_errors = get_accuracy(train, affixer, decoder, False)
-        test_acc, test_acc_change, train_dist, test_errors  = get_accuracy(test,  affixer, decoder, False)
+        train_acc, train_acc_change, train_dist, train_errors =\
+            get_accuracy(train, affixer, decoder, False)
+        test_acc, test_acc_change, test_dist, test_errors  =\
+            get_accuracy(test, affixer, decoder, False)
         textwriter = csv.writer(open('train_errors.csv', 'wb'))
         for error in train_errors:
             try:
@@ -233,9 +240,9 @@ class Trainer():
                         else self.euclid_loss(output, targs, max_len)
 
         # regularize affix toward epsilon
-        lambda_reg = 1.0e-5
-        loss    += lambda_reg * regularizer(affix, torch.zeros_like(affix))
-        #output  += lambda_reg * regularizer(output, torch.zeros_like(output))
+        lambda_reg = 1.0e-3
+        #loss  += lambda_reg * regularizer(affix, torch.zeros_like(affix))
+        #loss  += lambda_reg * regularizer(output, torch.zeros_like(output))
 
         # regularize pivot, copy, unpivot toward extremes (min-entropy)
         #loss += lambda_reg * binary_entropy(pivot).sum()
