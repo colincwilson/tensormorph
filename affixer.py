@@ -29,24 +29,25 @@ class Affixer(nn.Module):
         scan    = torch.zeros((nbatch,2)) # self.scanner(stem)
         morpho  = torch.cat([morph, scan], 1)
 
-        copy    = self.stem_modifier(stem, morpho) if 0\
+        copy_stem = self.stem_modifier(stem, morpho) if 0\
                     else torch.ones((nbatch, tpr.nrole))
         pivot   = self.pivoter(stem, morpho)
-        affix, unpivot = self.get_affix(stem, morpho, max_len)
+        affix, unpivot, copy_affix = self.get_affix(stem, morpho, max_len)
 
-        output  = self.combiner(stem, affix, copy, pivot, unpivot, max_len)
+        output  = self.combiner(stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len)
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {
                 'stem_tpr':stem,
                 'affix_tpr':affix,
-                'copy':copy,
+                'copy_stem':copy_stem,
+                'copy_affix':copy_affix,
                 'pivot':pivot,
                 'unpivot':unpivot,
                 'output_tpr':output
             })
 
-        return output, affix, (pivot, copy, unpivot)
+        return output, affix, (pivot, copy_stem, unpivot, copy_affix)
 
 
     def get_affix(self, stem, morpho, max_len):
@@ -56,18 +57,19 @@ class Affixer(nn.Module):
             #affix_redup = self.reduplicator(stem, morpho, max_len)
             #pivot_redup = self.unpivoter(affix0, morpho)
             # non-reduplicative affix
-            affix_fixed, pivot_fixed = self.affix_thunker(morpho)
+            affix_fixed, pivot_fixed, copy_fixed = self.affix_thunker(morpho)
             # convex combination of two affixes
             #redup = torch.zeros() # sigmoid(self.redup)
             #affix = redup * affix_redup + (1.0 - redup) * affix_fixed
             #pivot = redup * pivot_redup + (1.0 - redup) * affix_fixed
             affix = affix_fixed
             pivot = pivot_fixed
+            copy = copy_fixed
         else:
             # enforce non-reduplicative affix
-            affix, pivot = self.affix_thunker(morpho)
+            affix, pivot, copy = self.affix_thunker(morpho)
 
-        return affix, pivot
+        return affix, pivot, copy
 
 
     def init(self):

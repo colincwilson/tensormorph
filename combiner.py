@@ -21,7 +21,7 @@ class Combiner(nn.Module):
         self.node = node
 
 
-    def forward(self, stem, affix, copy, pivot, unpivot, max_len):
+    def forward(self, stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len):
         nbatch = stem.shape[0]
         morph_attender = self.morph_attender
         posn_attender  = self.posn_attender
@@ -45,8 +45,9 @@ class Combiner(nn.Module):
             theta   = alpha[:,0].unsqueeze(1)
             theta0  = dot_batch(pivot, beta0)
             theta1  = dot_batch(unpivot, beta1)
-            delta0  = dot_batch(copy, beta0)
-            delta1  = dot_batch(affix.narrow(1,0,1).squeeze(1), beta1) # xxx provisional
+            delta0  = dot_batch(copy_stem, beta0)
+            delta1  = dot_batch(copy_affix, beta1)
+            #delta1  = dot_batch(affix.narrow(1,0,1).squeeze(1), beta1) # xxx provisional
 
             # update tpr of output
             writer(stem, affix, alpha, beta0, beta1, omega, delta0, delta1)

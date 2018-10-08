@@ -124,7 +124,7 @@ def pretty_print(affixer, targs, header='**root**'):
     output = tpr.decoder.decode(record['root-output_tpr'])[0]
     targ_segs = 'NA' if targs is None else\
         tpr.seq_embedder.idvec2string(targs[0,:].data.numpy())
-    copy = record['root-copy'].data[0,:]
+    copy = record['root-copy_stem'].data[0,:]
     pivot = record['root-pivot'].data[0,:]
     unpivot = record['root-unpivot'].data[0,:]
     #morph_indx = record['root-morph_indx'].data[0,:,0]
@@ -220,7 +220,7 @@ class Trainer():
         # sample min-batch and predict outputs
         stems, morphs, targs, Stems, Morphs, Targs, targ_len = make_batch(train, nbatch)
         max_len = 20 # max(targ_len)
-        output, affix, (pivot, copy, unpivot) =\
+        output, affix, (pivot, copy_stem, unpivot, copy_affix) =\
             self.affixer(Stems, Morphs, max_len=max_len)
         #print Targs.data.numpy()
 

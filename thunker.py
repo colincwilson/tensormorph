@@ -13,6 +13,8 @@ class Thunker(nn.Module):
             nn.Linear(tpr.dmorph+2, tpr.dfill * tpr.drole, bias=True)
         self.morph2unpivot =\
             nn.Linear(tpr.dmorph+2, tpr.nrole, bias=True)
+        self.morph2copy =\
+            nn.Linear(tpr.dmorph+2, tpr.nrole, bias=True)
         #self.morph2affix.bias.data.fill_(-2.5)
         #self.morph2unpivot.bias.data.fill_(2.5)
 
@@ -32,4 +34,6 @@ class Thunker(nn.Module):
         #affix = torch.zeros((nbatch, tpr.dfill, tpr.drole)) # xxx hack
         unpivot = self.morph2unpivot(morpho)
         unpivot = sigmoid(unpivot).view(nbatch, tpr.nrole)
-        return affix, unpivot
+        copy = self.morph2copy(morpho)
+        copy = sigmoid(copy).view(nbatch, tpr.nrole)
+        return affix, unpivot, copy
