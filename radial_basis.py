@@ -68,13 +68,13 @@ def test():
     nbatch = 2
     gp = GaussianPool(n, tau)
     b = torch.zeros(nbatch,1).type(torch.FloatTensor)
-    print gp(b)
+    print(gp(b))
 
     gp2 = GaussianPool2D(n, tau)
-    print gp2.M
+    print(gp2.M)
     b = torch.FloatTensor(nbatch,n)
     b.data[:] = 0.0; b.data[0,0] = 1.0; b.data[0,4] = 0.1; b.data[1,9] = 1.0
-    print gp2(b)
+    print(gp2(b))
 
 if __name__ == "__main__":
     test()

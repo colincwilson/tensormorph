@@ -36,7 +36,7 @@ class BiScanner(nn.Module):
         return scan
 
     def init(self):
-        print 'BiScanner.init()'
+        print('BiScanner.init()')
         #self.W0.weight.data.uniform_(-1.0, 0.0)
         #self.W0.weight.data[0,2] = 1.0 # at initial word boundary
         #self.W0.bias.data[:] = -2.0
@@ -71,7 +71,7 @@ class Scanner(nn.Module):
         #log_match = torch.log(match) # xxx change return value of matcher xxx watch out for masking!
         scan    = torch.zeros((nbatch, nrole), requires_grad=True).clone()
         h       = torch.zeros(nbatch, requires_grad=True)
-        for i in xrange(start, end, step):
+        for i in range(start, end, step):
             p = match[:,i] * torch.exp(-u*h)
             h = p + (1.0-p) * h
             scan[:,i] = p
@@ -103,7 +103,7 @@ class BiLSTMScanner(nn.Module):
 
         # LR -> scan
         h1_old = torch.zeros((nbatch, hidden_size))
-        for i in xrange(0, max_len, 1):
+        for i in range(0, max_len, 1):
             f = posn2filler_batch(stem, posn.fill_(i))
             mask = hardtanh(f[:,0], 0.0, 1.0).unsqueeze(1)
             #mask = f[:,0].unsqueeze(1)
@@ -112,7 +112,7 @@ class BiLSTMScanner(nn.Module):
 
         # <-RL scan
         h2_old = torch.zeros((nbatch, hidden_size))
-        for i in xrange(max_len-1, -1, -1):
+        for i in range(max_len-1, -1, -1):
             f = posn2filler_batch(stem, posn.fill_(i))
             mask = hardtanh(f[:,0], 0.0, 1.0).unsqueeze(1)
             #mask = f[:,0].unsqueeze(1)

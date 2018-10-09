@@ -33,14 +33,14 @@ def randVecs2(N, dim, dpMatrix):
         maxDiff = np.max(np.abs(np.dot(M.T,M) - dpMatrix))
         if maxDiff <= tol:
             return M
-    print 'randVecs2: Failed to find solution to tolerance in specified iterations'
+    print('randVecs2: Failed to find solution to tolerance in specified iterations')
     return M
 
 def test():
     M = randVecs(5, 6, np.identity(5))
-    print M
+    print(M)
     sim = np.round(np.dot(M.T, M), 5)
-    print sim
+    print(sim)
 
 if __name__ == "__main__":
     test()

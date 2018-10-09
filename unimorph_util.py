@@ -42,14 +42,14 @@ def tag2keyvalue(morph):
 
 # check conversion of all tags in conll2018-sigmorphon data
 if False:
-    print tag2keyvalue('ADJ;NOM/ACC;FEM;SG;DEF')
+    print(tag2keyvalue('ADJ;NOM/ACC;FEM;SG;DEF'))
     datdir = '/Users/colin/Dropbox/TensorProductStringToStringMapping/conll-sigmorphon2018/task1/all'
-    print 'file,missing labels'
+    print('file,missing labels')
     for datfile in glob.glob(datdir+'/*'):
         dat = pd.read_table(datfile, header=None)
         dat.columns = ['stem', 'output', 'morph']
         dat['morph'] = [x.lower() for x in dat['morph']]
         morph2 = [tag2keyvalue(x) for x in dat['morph']]
         if len(labels_without_dimensions) > 0:
-            print re.sub('.*/', '', datfile) +','+ ';'.join(labels_without_dimensions)
+            print(re.sub('.*/', '', datfile) +','+ ';'.join(labels_without_dimensions))
         labels_without_dimensions = set([])

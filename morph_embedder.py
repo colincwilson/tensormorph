@@ -31,13 +31,13 @@ class MorphEmbedder():
 
 class UnimorphEmbedder(MorphEmbedder):
     def __init__(self, dat):
-        print 'collecting dimensions and labels from morphological tags ...'
+        print('collecting dimensions and labels from morphological tags ...')
         # convert all morph tags to unimorph dimension=label lists
         dat['morph'] = [x.lower() for x in dat['morph']]
         tags = [tag2keyvalue(x) for x in dat['morph']]
         tags_unk = [x for x in tags if re.search('[?]',x)]
         if len(tags_unk)>0:
-            print 'tags with unknown dimensions or labels:', tags_unk
+            print('tags with unknown dimensions or labels:', tags_unk)
         #print unimorph_util.labels_without_dimensions
 
         # collect dimension=label types
@@ -53,9 +53,9 @@ class UnimorphEmbedder(MorphEmbedder):
             dim2labels[dim] = [x[1] for x in dimlabs if x[0]==dim]
             dim2labels[dim].sort()
         label2dim = {y:x for x in dim2labels for y in dim2labels[x]}
-        print 'dimensions:', dims
-        print 'dimension => labels:', dim2labels
-        print 'label => dimension:', label2dim
+        print('dimensions:', dims)
+        print('dimension => labels:', dim2labels)
+        print('label => dimension:', label2dim)
 
         # make embedding map for each dimension
         dim2embed = {}
@@ -67,7 +67,7 @@ class UnimorphEmbedder(MorphEmbedder):
                 torch.eye(n),\
                 torch.zeros(n,1)\
                 ], 1)
-        print 'dimensionality of morphological embedding:', dmorph
+        print('dimensionality of morphological embedding:', dmorph)
 
         self.dims = dims
         self.dim2labels = dim2labels
@@ -98,20 +98,20 @@ class UnimorphEmbedder(MorphEmbedder):
         # collect unique tags from data, embed each one,
         # perform dimensionality reduction on the result
         tag_types = Counter([x for x in dat.morph])
-        print tag_types
+        print(tag_types)
         for tag in tag_types:
-            print tag, '->', tag_types[tag]
+            print(tag, '->', tag_types[tag])
         sys.exit(0)
         tags = list(set([x for x in dat.morph]))
-        print 'number of unique morphological tags:', len(tags)
+        print('number of unique morphological tags:', len(tags))
         embeds = [embed(x).unsqueeze(-1) for x in tags]
         M = torch.cat(embeds, 1).t()
         M = M.data.numpy()
-        print 'input matrix dimensionality:', M.shape
+        print('input matrix dimensionality:', M.shape)
         pca = PCA(); pca.fit(M)
         cumvar = np.cumsum(pca.explained_variance_ratio_)
         ndims = len([x for x in cumvar if x<0.999])
-        print 'reducing to dimensionality to:', ndims
+        print('reducing to dimensionality to:', ndims)
         self.pca = PCA(n_components=ndims); self.pca.fit(M)
         self.dmorph = ndims
 
@@ -135,7 +135,7 @@ class HebrewEmbedder(MorphEmbedder):
             dim2embed[dim] = torch.cat([\
                 torch.eye(n)
                 ], 1)
-        print 'dimensionality of morphological embedding:', dmorph
+        print('dimensionality of morphological embedding:', dmorph)
 
         self.dims = dims
         self.dim2labels = dim2labels
@@ -173,7 +173,7 @@ class HindiEmbedder(MorphEmbedder):
             dim2embed[dim] = torch.cat([\
                 torch.eye(n)
                 ], 1)
-        print 'dimensionality of morphological embedding:', dmorph
+        print('dimensionality of morphological embedding:', dmorph)
 
         self.dims = dims
         self.dim2labels = dim2labels
