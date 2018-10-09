@@ -11,12 +11,12 @@ class Recorder:
 
     # record (key,value) pairs
     def set_values(self, prefix, keyvals):
-        for x,y in keyvals.iteritems():
+        for x,y in keyvals.items():
             self.record[prefix+'-'+x] = y.clone()
 
     # update record of (key,value) pairs
     def update_values(self, prefix, keyvals):
-        for x,y in keyvals.iteritems():
+        for x,y in keyvals.items():
             x = prefix+'-'+x
             if not x in self.record:
                 self.record[x] = [y.clone(),]
@@ -24,13 +24,13 @@ class Recorder:
                 self.record[x].append(y.clone())
     
     def dump(self, save=False, test=None):
-        for x,y in self.record.iteritems():
+        for x,y in self.record.items():
             if isinstance(y, list):
                 y = [yi.unsqueeze(1) for yi in y]
                 self.record[x] = torch.cat(y, dim=1)
         if save:
             # save all recorded objects
-            for x,y in self.record.iteritems():
+            for x,y in self.record.items():
                 y = np.clip(y.data.numpy(), -1.0e5, 1.0e5)
                 np.save(tpr.save_dir+'/'+x +'.npy', y)
             # write filler, role, unbinding matrices

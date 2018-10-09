@@ -32,7 +32,7 @@ class Matcher3(nn.Module):
             assert(np.all(0.0 <= match.data.numpy()))
             assert(np.all(match.data.numpy() <= 1.0))
         except AssertionError as e:
-            print match.data.numpy()
+            print(match.data.numpy())
             raise
 
         if tpr.recorder is not None:

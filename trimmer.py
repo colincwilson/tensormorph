@@ -27,7 +27,7 @@ class BiTrimmer(nn.Module):
         return copy
 
     def init(self):
-        print 'BiTrimmer.init() does nothing'
+        print('BiTrimmer.init() does nothing')
 
 
 # trim a contiguous part of a form by scanning LR-> or <-RL,

@@ -26,7 +26,7 @@ class Decoder(nn.Module):
 
         posn = torch.LongTensor(nbatch).zero_()
         sim = torch.zeros((nbatch, nfill, nrole), requires_grad=True)
-        for k in xrange(nrole):
+        for k in range(nrole):
             posn.fill_(k)
             f = posn2filler_batch(T, posn)
             #dist = F.expand(nbatch, dfill, nfill) - f.unsqueeze(-1)
@@ -37,10 +37,10 @@ class Decoder(nn.Module):
 
     def decode(self, T):
         nbatch = T.shape[0]
-        trace  = [ [] for i in xrange(nbatch)]
+        trace  = [ [] for i in range(nbatch)]
         sim = self.forward(T)
         # xxx vectorize over batch?
-        for i in xrange(nbatch):
+        for i in range(nbatch):
             pred_argmax = sim[i,:,:].max(0)[1]
             trace.append( pred_argmax.data.numpy() )
         return trace
@@ -65,9 +65,9 @@ class LocalistDecoder(nn.Module):
         sim = -tau*dist + eps
         if self.debug: # verify against generic decoder
             sim_ = self.decoder(T)
-            print sim[0,:,0]
-            print sim_[0,:,0]
-            print np.max(np.abs( sim.data.numpy() - sim_.data.numpy() ))
+            print(sim[0,:,0])
+            print(sim_[0,:,0])
+            print(np.max(np.abs( sim.data.numpy() - sim_.data.numpy() )))
             sys.exit(0)
         return sim
     
@@ -76,7 +76,7 @@ class LocalistDecoder(nn.Module):
         sim = self.forward(T)
         trace = []
         # xxx vectorize over batch?
-        for i in xrange(nbatch):
+        for i in range(nbatch):
             pred_argmax = sim[i,:,:].max(0)[1]
             trace.append( pred_argmax.data.numpy() )
         return trace
