@@ -72,9 +72,9 @@ class Scanner(nn.Module):
         scan    = torch.zeros((nbatch, nrole), requires_grad=True).clone()
         h       = torch.zeros(nbatch, requires_grad=True)
         for i in range(start, end, step):
-            p = match[:,i] * torch.exp(-u*h)
-            h = p + (1.0-p) * h
-            scan[:,i] = p
+            s = match[:,i] * torch.exp(-u*h)
+            h = h + s   # alt.: h = s + (1.0-s) * h
+            scan[:,i] = s
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {
@@ -83,6 +83,45 @@ class Scanner(nn.Module):
                 'scan':scan
             })
 
+        return scan
+
+
+# locate leftmost/rightmost/every instance of pattern -- assumes 
+# that role vectors are local so that LocalistMatcher is correct
+# - multiplies matcher outputs by ordinal cline determined by direction
+# xxx less reliable than Scanner?
+class ClineScanner(nn.Module):
+    def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
+        super(ClineScanner, self).__init__()
+        self.morpho_size = morpho_size
+        self.nfeature   = nfeature
+        self.direction  = direction
+        self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
+        self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
+        if direction == 'LR->':
+            self.start, self.end, self.step = tpr.nrole, 0.0, -1.0
+        if direction == '<-RL':
+            self.start, self.end, self.step = 1.0, tpr.nrole+1.0, 1.0
+        self.cline = torch.arange(self.start, self.end, self.step).unsqueeze(0)
+        self.node = node
+
+    def forward(self, stem, morpho):
+        #start, end, step = self.start, self.end, self.step
+        nbatch, nrole = stem.shape[0], tpr.nrole
+        cline = self.cline.expand(nbatch,tpr.nrole)
+        u = torch.exp(self.morph2u(morpho) - 0.0)
+
+        match   = self.matcher(stem, morpho)
+        scan    = u * (match * cline)
+        scan    = torch.softmax(scan, 1) # xxx use log_softmax
+
+        if tpr.recorder is not None:
+            tpr.recorder.set_values(self.node, {
+                'u':u,
+                'match':match,
+                'scan':scan
+            })
+        
         return scan
 
 
