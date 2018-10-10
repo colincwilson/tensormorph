@@ -168,7 +168,8 @@ class Trainer():
 
         print('number of trainable parameters =', count_parameters(self.affixer), '+', count_parameters(self.decoder))
 
-        optimizer = optim.Adagrad # optim.RMSprop
+        #optimizer = optim.Adagrad # optim.RMSprop
+        optimizer = optim.SGD
         self.affixer_optim = optimizer(self.affixer.parameters(), lr, dc)
         self.decoder_optim = optimizer(self.decoder.parameters(), lr, dc)
         self.criterion = nn.CrossEntropyLoss(ignore_index=0, reduction='none')\

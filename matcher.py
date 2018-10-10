@@ -9,9 +9,9 @@ from radial_basis import GaussianPool
 class Matcher3(nn.Module):
     def __init__(self, morpho_size, input_size, node=''):
         super(Matcher3, self).__init__()
-        self.matcher_prev = MatcherGCM(morpho_size, input_size, node=node+'-prev')
-        self.matcher_cntr = MatcherGCM(morpho_size, input_size, node=node+'-cntr')
-        self.matcher_next = MatcherGCM(morpho_size, input_size, node=node+'-next')
+        self.matcher_prev = Matcher(morpho_size, input_size, node=node+'-prev')
+        self.matcher_cntr = Matcher(morpho_size, input_size, node=node+'-cntr')
+        self.matcher_next = Matcher(morpho_size, input_size, node=node+'-next')
         self.node = node
     
     def forward(self, X, morpho):
@@ -20,11 +20,11 @@ class Matcher3(nn.Module):
         zero = torch.zeros((nbatch, m, 1))
         _X_ = torch.cat((zero, X, zero), 2)
         # apply matchers to every window of length three in input
-        log_match_prev = self.matcher_prev(_X_, morpho).narrow(1,0,n)
-        log_match_cntr = self.matcher_cntr(_X_, morpho).narrow(1,1,n)
-        log_match_next = self.matcher_next(_X_, morpho).narrow(1,2,n)
-        # multiplicative (log-linear) combination of matcher outputs
-        match = torch.exp(log_match_prev + log_match_cntr + log_match_next)
+        match_prev = self.matcher_prev(_X_, morpho).narrow(1,0,n)
+        match_cntr = self.matcher_cntr(_X_, morpho).narrow(1,1,n)
+        match_next = self.matcher_next(_X_, morpho).narrow(1,2,n)
+        # multiplicative combination of matcher outputs
+        match = match_prev * match_cntr * match_next
         # mask out match results for epsilon fillers
         mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0).squeeze(1).detach()
         match = match * mask
@@ -48,26 +48,24 @@ class Matcher(nn.Module):
     def __init__(self, morpho_size, nfeature, node=''):
         super(Matcher, self).__init__()
         self.morph2w    = nn.Linear(morpho_size, nfeature, bias=True)
-        self.morph2b    = nn.Linear(morpho_size, 1, bias=True)
-        self.morph2tau  = nn.Linear(morpho_size, 1, bias=True)
         self.nfeature = nfeature
         self.node = node
 
     def forward(self, X, morpho):
-        w = self.morph2w(morpho).unsqueeze(1)
-        b = self.morph2b(morpho).unsqueeze(1)
-        tau = self.morph2tau(morpho).unsqueeze(1)
+        w   = sigmoid(self.morph2w(morpho).unsqueeze(1))
+        w_b = w + (relu(torch.sign(w - 0.5)) - w).detach()
+        #print(np.round(w_b.data[0,:].numpy(), 2))
         k = self.nfeature
         if tpr.random_roles:
             # distributed roles -> local roles
             X = torch.bmm(X, tpr.U)
-        # log_match_i = tau * dot(w,x_i)
-        score     = torch.bmm(w, X.narrow(1,0,k)) + b
-        log_match = logsigmoid(tau * score).squeeze(1)
-        # log_match_i = dot(w,x_i) - ||w||_1 
-        #log_match = torch.bmm(w, X.narrow(1,0,k))
-        #log_match = log_match.squeeze(1) - torch.norm(w, 1, 2)
-        return log_match
+        # straight-through
+        match = torch.bmm(w_b, X.narrow(1,0,k)).squeeze(1) - torch.sum(w_b,2) + 0.5
+        #print(match.shape)
+        match_b = match + (relu(torch.sign(match)) - match).detach()
+        print(np.round(w_b.data[0,:].numpy(), 2))
+        print(np.round(match.data[0,:].numpy(), 2))
+        return match_b
 
 
 # attention-weighted euclidean distance matcher  
