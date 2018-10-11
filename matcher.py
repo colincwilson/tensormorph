@@ -48,24 +48,30 @@ class Matcher(nn.Module):
     def __init__(self, morpho_size, nfeature, node=''):
         super(Matcher, self).__init__()
         self.morph2w    = nn.Linear(morpho_size, nfeature, bias=True)
+        self.morph2a    = nn.Linear(morpho_size, nfeature, bias=True)
+        self.morph2c    = nn.Linear(morpho_size, 1, bias=True)
         self.nfeature = nfeature
+        self.temp = 0.1
         self.node = node
 
     def forward(self, X, morpho):
-        w   = sigmoid(self.morph2w(morpho).unsqueeze(1))
-        w_b = w + (relu(torch.sign(w - 0.5)) - w).detach()
-        #print(np.round(w_b.data[0,:].numpy(), 2))
-        k = self.nfeature
+        w   = self.morph2w(morpho).unsqueeze(2)
+        w   = RelaxedBernoulli(self.temp, logits=w).rsample()
+
+        a   = self.morph2a(morpho).unsqueeze(2)
+        a   = RelaxedBernoulli(self.temp, logits=a).rsample()
+
+        c   = torch.exp(self.morph2c(morpho))
+        k   = self.nfeature
         if tpr.random_roles:
             # distributed roles -> local roles
             X = torch.bmm(X, tpr.U)
-        # straight-through
-        match = torch.bmm(w_b, X.narrow(1,0,k)).squeeze(1) - torch.sum(w_b,2) + 0.5
-        #print(match.shape)
-        match_b = match + (relu(torch.sign(match)) - match).detach()
-        print(np.round(w_b.data[0,:].numpy(), 2))
-        print(np.round(match.data[0,:].numpy(), 2))
-        return match_b
+        score = torch.pow(X.narrow(1,0,k) - w_b, 2.0)
+        score = torch.sum(a_b * score, 1)
+        score = torch.pow(score, 0.5)
+        log_match = -c * score
+        match = torch.exp(log_match)
+        return match
 
 
 # attention-weighted euclidean distance matcher  

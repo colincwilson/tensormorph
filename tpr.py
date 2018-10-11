@@ -14,7 +14,8 @@ import torch.nn as nn
 from torch import optim
 from torch.nn import Parameter
 from torch.nn.functional import hardtanh, linear, log_softmax, relu, relu6, logsigmoid, softmax, softplus
-from torch.distributions import RelaxedBernoulli
+from torch.distributions.relaxed_bernoulli import RelaxedBernoulli
+from torch.distributions.relaxed_categorical import RelaxedOneHotCategorical
 from torch import tanh, sigmoid
 from recorder import Recorder
 
