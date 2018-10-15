@@ -20,8 +20,11 @@ class StemModifier(nn.Module):
         nbatch = stem.shape[0]     
         delete_gate = sigmoid(self.delete_gate)
         trim_gate = sigmoid(self.trim_gate)
-        ones   = torch.ones((nbatch, tpr.nrole), requires_grad=False)
+        if tpr.discretize:
+            delete_gate = torch.round(delete_gate)
+            trim_gate = torch.round(trim_gate)
 
+        ones   = torch.ones((nbatch, tpr.nrole), requires_grad=False)
         delete = delete_gate * self.deleter(stem, morpho) +\
                  (1.0-delete_gate) * ones
         trim   = trim_gate * self.trimmer(stem, morpho) +\

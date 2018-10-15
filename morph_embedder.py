@@ -38,13 +38,13 @@ class UnimorphEmbedder(MorphEmbedder):
         tags_unk = [x for x in tags if re.search('[?]',x)]
         if len(tags_unk)>0:
             print('tags with unknown dimensions or labels:', tags_unk)
-        #print unimorph_util.labels_without_dimensions
+        #print(unimorph_util.labels_without_dimensions)
 
         # collect dimension=label types
         dimlabs = [set(x.split(';')) for x in tags]
         dimlabs = reduce((lambda x,y: x | y), dimlabs, set([]))
         dimlabs = [x.split('=') for x in dimlabs]
-        #print dimlabs
+        #print(dimlabs)
 
         # collect labels within each dimension
         dims = list(set([x[0] for x in dimlabs])); dims.sort()

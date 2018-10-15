@@ -25,6 +25,8 @@ class Matcher3(nn.Module):
         log_match_next = self.matcher_next(_X_, morpho).narrow(1,2,n)
         # multiplicative (log-linear) combination of matcher outputs
         match = torch.exp(log_match_prev + log_match_cntr + log_match_next)
+        if tpr.discretize:
+            match = torch.round(match)
         # mask out match results for epsilon fillers
         mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0).squeeze(1).detach()
         match = match * mask
@@ -64,9 +66,6 @@ class Matcher(nn.Module):
         # log_match_i = tau * dot(w,x_i)
         score     = torch.bmm(w, X.narrow(1,0,k)) + b
         log_match = logsigmoid(tau * score).squeeze(1)
-        # log_match_i = dot(w,x_i) - ||w||_1 
-        #log_match = torch.bmm(w, X.narrow(1,0,k))
-        #log_match = log_match.squeeze(1) - torch.norm(w, 1, 2)
         return log_match
 
 
@@ -88,25 +87,20 @@ class MatcherGCM(nn.Module):
         # attention weights in [0,1]
         a = sigmoid(self.morph2a(morpho)).unsqueeze(2)
         #a = torch.abs(w)
-        #a = torch.pow(w, 2.0)
         # sensitivity > 0
         c = torch.exp(self.morph2c(morpho))
         k = self.nfeature
+        if tpr.discretize:
+            w = torch.round(w)
+            a = torch.round(a)
 
         if tpr.random_roles:
             # distributed roles -> local roles
             X = torch.bmm(X, tpr.U)
-        #print X.narrow(1,0,k).shape, w.shape, a.shape
-        #print w[0,:,:]
-        #print a[0,:,:]
         score = torch.pow(X.narrow(1,0,k) - w, 2.0)
-        #score = torch.pow(X.narrow(1,1,k) - w, 2.0)
         score = torch.sum(a * score, 1)
         score = torch.pow(score, 0.5)
         log_match = -c * score
-        #print log_match[0,:]
-        #print torch.exp(log_match[0,:])
-        #sys.exit(0)
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {
@@ -118,7 +112,7 @@ class MatcherGCM(nn.Module):
         return log_match
 
 
-# old code w/ alternative similarity functions
+# alternative similarity functions
 # def forward(self, X, morpho):
 #     w   = self.morph2w(morpho)
 #     b   = self.morph2b(morpho)

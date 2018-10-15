@@ -49,7 +49,7 @@ def make_batch(dat, nbatch=20, debug=0, start_index=None):
     for i, morphi in enumerate(morphs):
         #Morphs.data[i,:] = morph_embedder.embed(morphi)
         Morphs[i,:] = morph_embedder.embed(morphi)
-        #print morphi, '->', Morphs.data[i,:]
+        #print(morphi, '->', Morphs.data[i,:])
 
     targ_len = [0]*nbatch
     Targs = torch.LongTensor(nbatch, tpr.nrole)
@@ -63,7 +63,7 @@ def make_batch(dat, nbatch=20, debug=0, start_index=None):
             print('__'+targi+'__')
 
     max_targ_len = np.max(np.array([len(x.split(' ')) for x in targs]))
-    #print 'max target length:', max_targ_len
+    #print('max target length:', max_targ_len)
     if max_targ_len >= tpr.nrole:
         print('error: max target length >= nrole')
         sys.exit(0)
@@ -89,11 +89,11 @@ def get_accuracy(dat, affixer, decoder, exact_only=True):
         morph = morphs[i]
         out = output[i]
         out = tpr.seq_embedder.idvec2string(out)
-        #print stems[i], outi, '['+ targi +']'
+        #print(stems[i], outi, '['+ targi +']')
         if out == targ:
             accuracy += 1.0
         else:
-            #print 'xxx'+ outi +'xxx =/= xxx'+ targi +'xxx'
+            #print('xxx'+ outi +'xxx =/= xxx'+ targi +'xxx')
             errors.append((stem, morph, targ, out))
         if out != stem:
             n_change += 1.0
@@ -111,7 +111,7 @@ def get_accuracy(dat, affixer, decoder, exact_only=True):
     if exact_only:
         return accuracy, accuracy_change, errors
     avg_mismatch = np.round(avg_mismatch / float(n), 3)
-    #print errors
+    #print(errors)
     tpr.recorder = None
     return accuracy, accuracy_change, avg_mismatch, errors
 
@@ -221,7 +221,7 @@ class Trainer():
         max_len = 20 # max(targ_len)
         output, affix, (pivot, copy_stem, unpivot, copy_affix) =\
             self.affixer(Stems, Morphs, max_len=max_len)
-        #print Targs.data.numpy()
+        #print(Targs.data.numpy())
 
         # xxx testing
         if 0:
@@ -238,9 +238,12 @@ class Trainer():
         loss, losses =  self.loglik_loss(output, Targs, max_len) if tpr.loss_func=='loglik'\
                         else self.euclid_loss(output, targs, max_len)
 
-        # regularize affix toward epsilon
+        # regularize affix toward epsilon, disprefer pivoting,
+        # prefer stem copying
         lambda_reg = 1.0e-3
-        loss  += lambda_reg * regularizer(affix, torch.zeros_like(affix))
+        loss += lambda_reg * regularizer(affix, torch.zeros_like(affix))
+        loss += lambda_reg * regularizer(pivot, torch.zeros_like(pivot))
+        loss += lambda_reg * regularizer(copy_stem, torch.ones_like(copy_stem))
         #loss  += lambda_reg * regularizer(output, torch.zeros_like(output))
 
         # regularize pivot, copy, unpivot toward extremes (min-entropy)

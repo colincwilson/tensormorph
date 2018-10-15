@@ -23,6 +23,9 @@ class BiTrimmer(nn.Module):
         alpha = sigmoid(self.a)
         copy_LR = self.trimmer_LR(stem, morpho)
         copy_RL = self.trimmer_RL(stem, morpho)
+        if tpr.discretize:
+            alpha = torch.round(alpha)
+
         copy = alpha * copy_LR + (1.0 - alpha) * copy_RL
         return copy
 
@@ -62,7 +65,7 @@ class Trimmer(torch.nn.Module):
         copy  = torch.zeros((nbatch, nrole), requires_grad=True).clone()
         h_phi = torch.zeros(nbatch, requires_grad=True)
         h_psi = torch.zeros(nbatch, requires_grad=True)
-        for k in xrange(start, end, step):
+        for k in range(start, end, step):
             p_phi = match_phi[:,k] * (1.0 - h_phi)
             h_phi = p_phi + (1.0 - p_phi) * h_phi
             p_psi = match_psi[:,k] * h_phi * (1.0 - h_psi)
@@ -76,4 +79,8 @@ class Trimmer(torch.nn.Module):
         copy[:,0] = copy0
         copy = copy.clone() # xxx
         # xxx add param for final word boundary?
+
+        if tpr.discretize:
+            copy = torch.round(copy)
+        
         return copy

@@ -27,6 +27,7 @@ class Thunker(nn.Module):
         # tpr of affix directly
         affix = self.morph2affix(morpho).view(nbatch, tpr.dfill, tpr.drole)
         affix = sigmoid(affix) # restrict learned affix components to [0,1]
+        #affix.data[0,0] = 1.0 # force affix to begin at 0th position
         #affix = tpr.seq_embedder.string2tpr('u m', False).unsqueeze(0).expand(nbatch, tpr.dfill, tpr.drole)   # xxx testing
         #affix = tanh(affix) # restrict learned affix components to [-1, +1]
         #affix  = tanh(PReLu(affix)) # restrict learned affix components to [0,1]
@@ -36,4 +37,10 @@ class Thunker(nn.Module):
         unpivot = sigmoid(unpivot).view(nbatch, tpr.nrole)
         copy = self.morph2copy(morpho)
         copy = sigmoid(copy).view(nbatch, tpr.nrole)
+
+        if tpr.discretize:
+            affix = torch.round(affix)
+            unpivot = torch.round(pivot)
+            copy = torch.round(copy)
+        
         return affix, unpivot, copy

@@ -35,7 +35,7 @@ def tag2keyvalue(morph):
     specs0 = [re.sub('(.)[0-9]+$', '\\1', x) for x in specs0]
     dims = [label_map[x] if x in label_map else '???' for x in specs0]
     labels_without_dimensions |= \
-        {specs[i] for i in xrange(len(specs)) if dims[i]=='???'}
+        {specs[i] for i in range(len(specs)) if dims[i]=='???'}
     dimlab = [x +'='+ y for x,y in zip(dims, specs)]
     dimlab = ';'.join(dimlab)
     return dimlab

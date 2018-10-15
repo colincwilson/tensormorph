@@ -23,7 +23,10 @@ class BiScanner(nn.Module):
         scan_LR = self.scanner_LR(stem, morpho)
         scan_RL = self.scanner_RL(stem, morpho)
         gate_LR = sigmoid(self.morph2a(morpho))
-        scan    = gate_LR * scan_LR + (1.0 - gate_LR) * scan_RL
+        if tpr.discretize:
+            gate_LR = torch.round(gate_LR)
+
+        scan = gate_LR * scan_LR + (1.0 - gate_LR) * scan_RL
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {
@@ -72,9 +75,13 @@ class Scanner(nn.Module):
         scan    = torch.zeros((nbatch, nrole), requires_grad=True).clone()
         h       = torch.zeros(nbatch, requires_grad=True)
         for i in range(start, end, step):
-            s = match[:,i] * torch.exp(-u*h)
-            h = h + s   # alt.: h = s + (1.0-s) * h
+            m = match[:,i]
+            s = m * torch.exp(-u*h)
+            h = h + m   # alt.: h = h + s -or- h = s + (1.0-s) * h
             scan[:,i] = s
+
+        if tpr.discretize:
+            scan = torch.round(scan)
 
         if tpr.recorder is not None:
             tpr.recorder.set_values(self.node, {

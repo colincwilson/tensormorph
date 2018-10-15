@@ -31,6 +31,7 @@ def init(seq_embedder_, morph_embedder_):
     global nfill, nrole, dfill, drole, dmorph
     global tau_min
     global loss_func
+    global discretize
     global recorder
     global save_dir
     seq_embedder = seq_embedder_
@@ -43,6 +44,7 @@ def init(seq_embedder_, morph_embedder_):
     dmorph = morph_embedder.dmorph if morph_embedder is not None else 0
     tau_min = torch.zeros(1) + 0.0
     loss_func = ['loglik', 'euclid'][0]
+    discretize = False
     recorder = None
 
 
@@ -103,7 +105,7 @@ def posn2vec_batch(M, posn, tau=None):
 # example with discrete positions:
 # posn = torch.LongTensor(np.array([0,3,5]))
 # u = posn2vec_batch(U, posn)
-# print u.data
+# print(u.data)
 
 
 # map attention distribution to column of matrix
@@ -168,11 +170,11 @@ def posn2filler(T, posn, tau=None):
 # => output is nbatch x nfill
 def posn2filler_batch(T, posn, tau=None):
     u = posn2unbind_batch(posn, tau)
-    #print T.shape, u.shape
+    #print(T.shape, u.shape)
     f = T.bmm(u.unsqueeze(2))
-    #print f.shape
+    #print(f.shape)
     f = f.squeeze(-1)
-    #print f.shape
+    #print(f.shape)
     return f
 
 
@@ -213,7 +215,7 @@ def bound_batch_old(X):
         nbatch, m, n = X.shape
         Y = torch.zeros_like(X)
         ones = torch.ones((1, n))
-        for i in xrange(nbatch):
+        for i in range(nbatch):
             Xi = X[i,:,:]
             maxi = torch.max(Xi, 0)[0].view(1, n)
             mini = torch.min(Xi, 0)[0].view(1, n)
@@ -234,7 +236,7 @@ def bound_batch(X):
     maxi = torch.max(maxi, 1)[0].view(nbatch, 1, n)
     Y = X / maxi
     #delta = torch.sum(torch.sum(Y - rescale_batch(X), 0), 0)
-    #print delta.data[0]
+    #print(delta.data[0])
     return Y
 
 # check that each value of vector is within bounds

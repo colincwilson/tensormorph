@@ -24,7 +24,7 @@ def randVecs2(N, dim, dpMatrix):
     step0 = 0.1
     tol = 1e-6
     maxIts = 50000
-    for i in xrange(maxIts):
+    for i in range(maxIts):
         inc = np.dot(M, np.dot(M.T,M) - dpMatrix)
         step1 = 0.01 / np.max(np.abs(inc))
         step = np.min((step0,step1))
