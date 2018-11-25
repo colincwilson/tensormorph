@@ -118,42 +118,42 @@ class UnimorphEmbedder(MorphEmbedder):
 
 class HebrewEmbedder(MorphEmbedder):
     def __init__(self):
-        dim2labels = {\
+        dim2vals = {\
             'tense': ['BEINONI', 'FUTURE', 'IMPERATIVE', 'INFINITIVE', 'PAST', 'PRESENT'],\
             'person': ['E', 'FIRST', 'SECOND', 'THIRD'],\
             'gender': ['E', 'F', 'M', 'MF'],\
             'number': ['E', 'PLURAL', 'SINGULAR'],\
             'complete': ['COMPLETE', 'MISSING']\
-            }
+        }
         dims = ['tense', 'person', 'gender', 'number', 'complete']
-        label2dim = {y:x for x in dim2labels for y in dim2labels[x]}
-        dim2embed = {}
-        dmorph = 0
+        val2dim = {y:x for x in dim2vals for y in dim2vals[x]}
+        dim2embed, dmorph = {}, 0
         for dim in dims:
-            n = len(dim2labels[dim])
+            n = len(dim2vals[dim])
+            dim2embed[dim] = torch.eye(n)
             dmorph += n
-            dim2embed[dim] = torch.cat([\
-                torch.eye(n)
-                ], 1)
-        print('dimensionality of morphological embedding:', dmorph)
 
         self.dims = dims
-        self.dim2labels = dim2labels
-        self.label2dim = label2dim
+        self.dim2vals = dim2vals
+        self.val2dim = val2dim
         self.dim2embed = dim2embed
         self.dmorph = dmorph+1
+        print('dimensionality of morphological embedding:', dmorph)
 
-    def embed(self, morph):
-        dims, dim2labels, dim2embed = self.dims, self.dim2labels, self.dim2embed
+    def morph2tags(self, morph):
+        dims, dim2vals, dim2embed = self.dims, self.dim2vals, self.dim2embed
         tags = zip(dims, morph.split('+'))
         tags = [(x, re.sub('.*=', '', y)) for (x,y) in tags]
-        tags = {x[0]:x[1] for x in tags}
+        return tags
+
+    def embed(self, morph):
+        tags = morph2tags(morph)
         embeds = [one,]
-        for dim in dims:
-            lab = tags[dim] if dim in tags else None
-            indx = 999 if lab is None else dim2labels[dim].index(lab)
+        for (dim,val) in tags:
+            indx = dim2vals[dim].index(val)
             embeds.append(dim2embed[dim][:,indx])
-        return torch.cat(embeds, 0)
+        embed = torch.cat(embeds, 0)
+        return embed
 
 
 class HindiEmbedder(MorphEmbedder):

@@ -6,7 +6,7 @@
 # Provides batch binding and unbinding (i.e., query) operations on TPRs
 # Convention: batch corresponds to *first* index in all inputs and outputs
 # (see https://discuss.pytorch.org/t/how-to-repeat-a-vector-batch-wise)
-# todo: convert ops to einsum (but currently does in-place operations!)
+# todo: convert ops to einsum (but currently does in-place operations?)
 
 
 import torch

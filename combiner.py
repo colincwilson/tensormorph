@@ -6,7 +6,7 @@ from tpr import *
 from radial_basis import GaussianPool
 from writer import Writer
 
-# encapsulates main hierarchical attention logic of reading / writing
+# encapsulates main hierarchical attention logic of reading / writing.
 # attention distributions are computed from gradient (scalar) indices 
 # that are updated over processing steps
 # hierarchical structure of attention:

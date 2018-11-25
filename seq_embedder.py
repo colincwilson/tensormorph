@@ -11,9 +11,9 @@ import re, sys
 epsilon, stem_begin, stem_end = u'ε', u'⋊', u'⋉'
 
 class SeqEmbedder():
-    def __init__(self, syms, vowels=None, nrole=20, random_fillers=False, random_roles=False):
-        syms_reg = [x for x in set(syms)] if vowels is None\
-                   else [x for x in (set(syms) | set(vowels))]
+    def __init__(self, segments=None, vowels=None, nrole=20, random_fillers=False, random_roles=False):
+        syms_reg = [x for x in set(segments)] if vowels is None\
+                   else [x for x in (set(segments) | set(vowels))]
         syms = [epsilon,] + [stem_begin,] + syms_reg + [stem_end,]
         print('symbols:', ' '.join([x for x in syms]))
         sym2id = { sym: i for i,sym in enumerate(syms) }
@@ -100,10 +100,12 @@ class SeqEmbedder():
     # map string to vector of indices
     # (input must be space-separated)
     def string2idvec(self, x, delim=True):
-        sym2id = self.sym2id
-        y = self.string2delim(x) if delim else x
-        y = [sym2id[yi] for yi in y.split(u' ')]
-        return y
+        sym2id  = self.sym2id
+        y       = self.string2delim(x) if delim else x
+        y       = [sym2id[yi] for yi in y.split(u' ')]
+        y_pad   = y + [0,]*(tpr.nrole - len(y))
+        y_pad   = torch.LongTensor(y_pad)
+        return y_pad, len(y)
 
     # map string to tpr
     # input must be space-separated
