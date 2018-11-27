@@ -9,10 +9,9 @@ import tpr
 from tpr import *
 import re, sys
 
-epsilon, stem_begin, stem_end = u'ε', u'⋊', u'⋉'
-
 class SeqEmbedder():
     def __init__(self, segments=None, vowels=None, nrole=20, random_fillers=False, random_roles=False):
+        epsilon, stem_begin, stem_end = config.epsilon, config.stem_begin, config.stem_end
         syms_reg = [x for x in set(segments)] if vowels is None\
                    else [x for x in (set(segments) | set(vowels))]
         syms = [epsilon,] + [stem_begin,] + syms_reg + [stem_end,]
@@ -146,6 +145,6 @@ def string2sep(x):
 
 # add word delimiters; input must be space-separated
 def string2delim(x):
-    val = [stem_begin,] + [xi for xi in x.split(' ')] + [stem_end,]
+    val = [config.stem_begin,] + [xi for xi in x.split(' ')] + [config.stem_end,]
     val = ' '.join(val)
     return val

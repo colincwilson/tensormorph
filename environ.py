@@ -20,6 +20,9 @@ def init(data=None, features=None, morph_embedder=None):
     from decoder        import Decoder, LocalistDecoder
 
     # tensor-product representations
+    config.epsilon      = u'ε'
+    config.stem_begin   = u'⋊'
+    config.stem_end     = u'⋉'
     config.random_fillers = False
     config.random_roles = False
     config.nrole        = 30
