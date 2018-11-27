@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr, radial_basis
 from tpr import *
 from radial_basis import GaussianPool
@@ -23,13 +24,13 @@ class BiScanner(nn.Module):
         scan_LR = self.scanner_LR(stem, morpho)
         scan_RL = self.scanner_RL(stem, morpho)
         gate_LR = sigmoid(self.morph2a(morpho))
-        if tpr.discretize:
+        if config.discretize:
             gate_LR = torch.round(gate_LR)
 
         scan = gate_LR * scan_LR + (1.0 - gate_LR) * scan_RL
 
-        if tpr.recorder is not None:
-            tpr.recorder.set_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
                 'gate_LR':gate_LR,
                 'scan_LR':scan_LR,
                 'scan_RL':scan_RL,
@@ -59,14 +60,14 @@ class Scanner(nn.Module):
         self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
         self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
         if direction == 'LR->':
-            self.start, self.end, self.step = 0, tpr.nrole, 1
+            self.start, self.end, self.step = 0, config.nrole, 1
         if direction == '<-RL':
-            self.start, self.end, self.step = (tpr.nrole-1), -1, -1
+            self.start, self.end, self.step = (config.nrole-1), -1, -1
         self.node = node
     
     def forward(self, stem, morpho):
         start, end, step = self.start, self.end, self.step
-        nbatch, nrole = stem.shape[0], tpr.nrole
+        nbatch, nrole = stem.shape[0], config.nrole
         u = torch.exp(self.morph2u(morpho) - 0.0).squeeze(-1)
         #u = torch.zeros(nbatch)
 
@@ -80,11 +81,11 @@ class Scanner(nn.Module):
             h = h + m   # alt.: h = h + s -or- h = s + (1.0-s) * h
             scan[:,i] = s
 
-        if tpr.discretize:
+        if config.discretize:
             scan = torch.round(scan)
 
-        if tpr.recorder is not None:
-            tpr.recorder.set_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
                 'u':u,
                 'match':match,
                 'scan':scan
@@ -106,24 +107,24 @@ class ClineScanner(nn.Module):
         self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
         self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
         if direction == 'LR->':
-            self.start, self.end, self.step = tpr.nrole, 0.0, -1.0
+            self.start, self.end, self.step = config.nrole, 0.0, -1.0
         if direction == '<-RL':
-            self.start, self.end, self.step = 1.0, tpr.nrole+1.0, 1.0
+            self.start, self.end, self.step = 1.0, config.nrole+1.0, 1.0
         self.cline = torch.arange(self.start, self.end, self.step).unsqueeze(0)
         self.node = node
 
     def forward(self, stem, morpho):
         #start, end, step = self.start, self.end, self.step
-        nbatch, nrole = stem.shape[0], tpr.nrole
-        cline = self.cline.expand(nbatch,tpr.nrole)
+        nbatch, nrole = stem.shape[0], config.nrole
+        cline = self.cline.expand(nbatch, config.nrole)
         u = torch.exp(self.morph2u(morpho) - 0.0)
 
         match   = self.matcher(stem, morpho)
         scan    = u * (match * cline)
         scan    = torch.softmax(scan, 1) # xxx use log_softmax
 
-        if tpr.recorder is not None:
-            tpr.recorder.set_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
                 'u':u,
                 'match':match,
                 'scan':scan
@@ -138,8 +139,8 @@ class BiLSTMScanner(nn.Module):
     def __init__(self, hidden_size=1):
         super(BiLSTMScanner, self).__init__()
         self.hidden_size = hidden_size
-        self.rnn1 = nn.GRUCell(tpr.dfill, hidden_size, bias=True)
-        self.rnn2 = nn.GRUCell(tpr.dfill, hidden_size, bias=True)
+        self.rnn1 = nn.GRUCell(config.dfill, hidden_size, bias=True)
+        self.rnn2 = nn.GRUCell(config.dfill, hidden_size, bias=True)
         #self.a = Parameter(torch.zeros(1))
 
     def forward(self, stem, max_len):

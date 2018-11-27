@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr, radial_basis
 from tpr import *
 from radial_basis import GaussianPool
@@ -25,7 +26,7 @@ class Matcher3(nn.Module):
         log_match_next = self.matcher_next(_X_, morpho).narrow(1,2,n)
         # multiplicative (log-linear) combination of matcher outputs
         match = torch.exp(log_match_prev + log_match_cntr + log_match_next)
-        if tpr.discretize:
+        if config.discretize:
             match = torch.round(match)
         # mask out match results for epsilon fillers
         mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0).squeeze(1).detach()
@@ -37,8 +38,8 @@ class Matcher3(nn.Module):
             print(match.data.numpy())
             raise
 
-        if tpr.recorder is not None:
-            tpr.recorder.set_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
                 'match':match
             })
 
@@ -60,9 +61,9 @@ class Matcher(nn.Module):
         b = self.morph2b(morpho).unsqueeze(1)
         tau = self.morph2tau(morpho).unsqueeze(1)
         k = self.nfeature
-        if tpr.random_roles:
+        if config.random_roles:
             # distributed roles -> local roles
-            X = torch.bmm(X, tpr.U)
+            X = torch.bmm(X, config.U)
         # log_match_i = tau * dot(w,x_i)
         score     = torch.bmm(w, X.narrow(1,0,k)) + b
         log_match = logsigmoid(tau * score).squeeze(1)
@@ -90,20 +91,20 @@ class MatcherGCM(nn.Module):
         # sensitivity > 0
         c = torch.exp(self.morph2c(morpho))
         k = self.nfeature
-        if tpr.discretize:
+        if config.discretize:
             w = torch.round(w)
             a = torch.round(a)
 
-        if tpr.random_roles:
+        if config.random_roles:
             # distributed roles -> local roles
-            X = torch.bmm(X, tpr.U)
+            X = torch.bmm(X, config.U)
         score = torch.pow(X.narrow(1,0,k) - w, 2.0)
         score = torch.sum(a * score, 1)
         score = torch.pow(score, 0.5)
         log_match = -c * score
 
-        if tpr.recorder is not None:
-            tpr.recorder.set_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
                 'a':a, 'w':w, 'c':c, 
                 'score':score, 
                 'log_match':log_match

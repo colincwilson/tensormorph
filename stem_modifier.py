@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+from environ import config
 import tpr
 from tpr import *
 
@@ -11,8 +13,8 @@ from trimmer import BiTrimmer
 class StemModifier(nn.Module):
     def __init__(self):
         super(StemModifier, self).__init__()
-        self.deleter = BiScanner(morpho_size = tpr.dmorph+2, nfeature = 5, node = 'root-stem_modifier-deleter')
-        self.trimmer = BiTrimmer(morpho_size = tpr.dmorph+2, nfeature = 5)
+        self.deleter = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = 'root-stem_modifier-deleter')
+        self.trimmer = BiTrimmer(morpho_size = config.dmorph+2, nfeature = 5)
         self.delete_gate = Parameter(torch.zeros(1))
         self.trim_gate = Parameter(torch.zeros(1))
 
@@ -20,11 +22,11 @@ class StemModifier(nn.Module):
         nbatch = stem.shape[0]     
         delete_gate = sigmoid(self.delete_gate)
         trim_gate = sigmoid(self.trim_gate)
-        if tpr.discretize:
+        if config.discretize:
             delete_gate = torch.round(delete_gate)
             trim_gate = torch.round(trim_gate)
 
-        ones   = torch.ones((nbatch, tpr.nrole), requires_grad=False)
+        ones   = torch.ones((nbatch, config.nrole), requires_grad=False)
         delete = delete_gate * self.deleter(stem, morpho) +\
                  (1.0-delete_gate) * ones
         trim   = trim_gate * self.trimmer(stem, morpho) +\

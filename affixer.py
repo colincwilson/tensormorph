@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr
 from tpr import *
 from scanner import BiScanner, BiLSTMScanner
@@ -12,11 +13,11 @@ class Affixer(nn.Module):
     def __init__(self, node='root'):
         super(Affixer, self).__init__()
         self.scanner        = BiLSTMScanner(hidden_size = 1)
-        self.pivoter        = BiScanner(morpho_size = tpr.dmorph+2, nfeature = 5, node = node+'-pivoter')
+        self.pivoter        = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-pivoter')
         self.stem_modifier  = StemModifier()
         if node=='root':
             self.reduplicator = Affixer('reduplicant')
-            self.unpivoter  = BiScanner(morpho_size = tpr.dmorph+2, nfeature = 5, node = node+'-unpivoter')
+            self.unpivoter  = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-unpivoter')
             self.redup      = Parameter(torch.zeros(1)) # xxx need to modulate by morph
         self.affix_thunker  = Thunker()
         self.combiner       = Combiner()
@@ -30,14 +31,14 @@ class Affixer(nn.Module):
         morpho  = torch.cat([morph, scan], 1)
 
         copy_stem = self.stem_modifier(stem, morpho) if 1\
-                    else torch.ones((nbatch, tpr.nrole))
+                    else torch.ones((nbatch, config.nrole))
         pivot   = self.pivoter(stem, morpho)
         affix, unpivot, copy_affix = self.get_affix(stem, morpho, max_len)
 
         output  = self.combiner(stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len)
 
-        if tpr.recorder is not None:
-            tpr.recorder.set_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
                 'stem_tpr':stem,
                 'affix_tpr':affix,
                 'copy_stem':copy_stem,

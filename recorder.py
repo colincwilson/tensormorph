@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import numpy as np
 import pandas as pd
-import torch, tpr, sys
+import torch, sys
 
 class Recorder:
     def __init__(self):
@@ -32,17 +33,17 @@ class Recorder:
             # save all recorded objects
             for x,y in self.record.items():
                 y = np.clip(y.data.numpy(), -1.0e5, 1.0e5)
-                np.save(tpr.save_dir+'/'+x +'.npy', y)
+                np.save(config.save_dir+'/'+x +'.npy', y)
             # write filler, role, unbinding matrices
-            np.save(tpr.save_dir+'/filler_matrix.npy', tpr.F)
-            np.save(tpr.save_dir+'/role_matrix.npy', tpr.R)
-            np.save(tpr.save_dir+'/unbind_matrix.npy', tpr.U)
+            np.save(config.save_dir+'/filler_matrix.npy', config.F)
+            np.save(config.save_dir+'/role_matrix.npy', config.R)
+            np.save(config.save_dir+'/unbind_matrix.npy', config.U)
             # write symbols
-            syms = np.array(tpr.seq_embedder.syms)
-            np.savetxt(tpr.save_dir+'/symbols.txt', syms, fmt='%s')
+            syms = np.array(config.seq_embedder.syms)
+            np.savetxt(config.save_dir+'/symbols.txt', syms, fmt='%s')
             # write test forms
             if test is not None:
-                test.to_csv(tpr.save_dir+'/test.csv', encoding='utf-8')
+                test.to_csv(config.save_dir+'/test.csv', encoding='utf-8')
         return self.record
 
     def init(self):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr
 from tpr import *
 from distance import euclid_squared_batch
@@ -20,8 +21,8 @@ class Decoder(nn.Module):
 
     def forward(self, T):
         nbatch = T.shape[0]
-        F, nfill, dfill, nrole = tpr.F, tpr.nfill, tpr.dfill, tpr.nrole
-        tau = torch.exp(self.tau) + tpr.tau_min
+        F, nfill, dfill, nrole = config.F, config.nfill, config.dfill, config.nrole
+        tau = torch.exp(self.tau) + config.tau_min
         eps = self.eps
 
         posn = torch.LongTensor(nbatch).zero_()
@@ -59,9 +60,9 @@ class LocalistDecoder(nn.Module):
         self.decoder = Decoder() if self.debug else None
 
     def forward(self, T):
-        tau = torch.exp(self.tau) + tpr.tau_min
+        tau = torch.exp(self.tau) + config.tau_min
         eps = self.eps
-        dist = euclid_squared_batch(T, tpr.F)
+        dist = euclid_squared_batch(T, config.F)
         sim = -tau*dist + eps
         if self.debug: # verify against generic decoder
             sim_ = self.decoder(T)

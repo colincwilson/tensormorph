@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr, radial_basis
 from tpr import *
 from radial_basis import GaussianPool
@@ -16,7 +17,7 @@ class Combiner(nn.Module):
     def __init__(self, node='combiner'):
         super(Combiner, self).__init__()
         self.morph_attender = GaussianPool(2)
-        self.posn_attender  = GaussianPool(tpr.nrole)
+        self.posn_attender  = GaussianPool(config.nrole)
         self.writer = Writer()
         self.node = node
 
@@ -52,8 +53,8 @@ class Combiner(nn.Module):
             # update tpr of output
             writer(stem, affix, alpha, beta0, beta1, omega, delta0, delta1)
 
-            if tpr.recorder is not None:
-                tpr.recorder.update_values(self.node, {
+            if config.recorder is not None:
+                config.recorder.update_values(self.node, {
                     'morph_indx':a,
                     'stem_indx':b0,
                     'affix_indx':b1,

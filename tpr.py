@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Container for role / unbinding, filler, morph embeddings
-# and other global configurations.
 # Provides batch binding and unbinding (i.e., query) operations on TPRs
 # Convention: batch corresponds to *first* index in all inputs and outputs
 # (see https://discuss.pytorch.org/t/how-to-repeat-a-vector-batch-wise)
 # todo: convert ops to einsum (but currently does in-place operations?)
-
 
 import torch
 import torch.nn as nn
@@ -16,6 +13,8 @@ from torch.nn import Parameter
 from torch.nn.functional import hardtanh, linear, log_softmax, relu, relu6, logsigmoid, softmax, softplus
 from torch.distributions import RelaxedBernoulli
 from torch import tanh, sigmoid
+
+from environ import config
 from recorder import Recorder
 
 import numpy as np
@@ -23,30 +22,6 @@ from numpy import linalg
 import sys
 
 import randVecs
-
-def init(seq_embedder_, morph_embedder_):
-    global seq_embedder, morph_embedder
-    global F, R, U
-    global random_fillers, random_roles
-    global nfill, nrole, dfill, drole, dmorph
-    global tau_min
-    global loss_func
-    global discretize
-    global recorder
-    global save_dir
-    seq_embedder = seq_embedder_
-    morph_embedder = morph_embedder_
-    F, R, U = seq_embedder.F, seq_embedder.R, seq_embedder.U
-    random_fillers = seq_embedder.random_fillers
-    random_roles = seq_embedder.random_roles
-    nfill, nrole = seq_embedder.nfill, seq_embedder.nrole
-    dfill, drole = seq_embedder.dfill, seq_embedder.drole
-    dmorph = morph_embedder.dmorph if morph_embedder is not None else 0
-    tau_min = torch.zeros(1) + 0.0
-    loss_func = ['loglik', 'euclid'][0]
-    discretize = False
-    recorder = None
-
 
 # batch dot (inner) product
 def dot_batch(x, y):
@@ -123,16 +98,19 @@ def attn2vec_batch(M, attn):
 
 # map soft position to soft role vector
 def posn2role(posn, tau=None):
+    R = config.R
     return posn2vec(R, posn, tau)
 
 
 # map soft position to soft role vector
 # => output is nbatch x drole
 def posn2role_batch(posn, tau=None):
+    R = config.R
     return posn2vec_batch(R, posn, tau)
 
 
 def attn2role_batch(attn):
+    R = config.R
     return attn2vec_batch(R, attn)
 
 
@@ -142,17 +120,20 @@ def attn2succ_batch(attn):
 
 # map soft position to soft unbinding vector
 def posn2unbind(posn, tau=None):
+    U = config.U
     return posn2vec(U, posn, tau)
 
 
 # map soft position to soft unbinding vector
 # => output is nbatch x drole
 def posn2unbind_batch(posn, tau=None):
+    U = config.U
     return posn2vec_batch(U, posn, tau)
 
 
 # map attention distribution to soft unbinding vector
 def attn2unbind_batch(attn):
+    U = config.U
     return attn2vec_batch(U, attn)
 
 
@@ -179,7 +160,7 @@ def posn2filler_batch(T, posn, tau=None):
 
 
 def attn2filler_batch(T, attn):
-    u = attn2vec_batch(U, attn)
+    u = attn2vec_batch(config.U, attn)
     f = T.bmm(u.unsqueeze(2))
     f = f.squeeze(-1)
     return f
@@ -238,6 +219,7 @@ def bound_batch(X):
     #delta = torch.sum(torch.sum(Y - rescale_batch(X), 0), 0)
     #print(delta.data[0])
     return Y
+
 
 # check that each value of vector is within bounds
 # xxx move elsewhere

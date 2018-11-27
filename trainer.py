@@ -1,28 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr
 from tpr import *
-from data_set import DataBatch
+from data import DataBatch
 from model import Model
 import csv
 
 class Trainer():
-    def __init__(self, model, nbatch=40, nepoch=1000, lr=0.10, dc=0.0):
+    def __init__(self, model):
         self.model  = model
-        self.nbatch = nbatch    # xxx get these from global_args
-        self.nepoch = nepoch
-        self.lr     = lr
-        self.dc     = dc
 
         optimizer = optim.Adagrad # optim.RMSprop
         self.affixer_optim =\
-            optimizer(model.affixer.parameters(), lr, dc)
+            optimizer(model.affixer.parameters(), config.learn_rate, config.dc)
         self.decoder_optim =\
-            optimizer(model.decoder.parameters(), lr, dc)
+            optimizer(model.decoder.parameters(), config.learn_rate, config.dc)
         self.criterion =\
             nn.CrossEntropyLoss(ignore_index=0, reduction='none')\
-            if tpr.loss_func=='loglik' else nn.MSELoss(reduction='none')
+            if config.loss_func=='loglik' else nn.MSELoss(reduction='none')
         #self.regularizer = nn.MSELoss(size_average=False)
         self.regularizer = nn.L1Loss(size_average=False)
 
@@ -32,23 +29,22 @@ class Trainer():
         )
 
 
-    def train(self, data_set):
+    def train(self, data):
         print ('training ...')
-        for epoch in range(self.nepoch):
-            loss = self.train1(data_set, epoch)
+        for epoch in range(config.nepoch):
+            loss = self.train1(data, epoch)
             if loss.item() < 0.01:
                 break
         return None
 
 
-    def train1(self, data_set, epoch, gradient_update=True):
+    def train1(self, data, epoch, gradient_update=True):
         affixer     = self.model.affixer
         decoder     = self.model.decoder
         regularizer = self.regularizer
-        nbatch      = self.nbatch
 
         # sample minibatch and predict outputs
-        batch = data_set.get_batch(nbatch)
+        batch = data.get_batch(config.batch_size)
         Stems, Morphs, Targs = batch.Stems, batch.Morphs, batch.Targs
         max_len = 20 # max(targ_len)
         output, affix, (pivot, copy_stem, unpivot, copy_affix) =\
@@ -84,7 +80,7 @@ class Trainer():
 
 
     def report(self, affixer, decoder, Stems, Morphs, Targs):
-        tpr.recorder = Recorder()
+        config.recorder = Recorder()
         output, _, _ =\
             affixer(Stems.narrow(0,0,1), Morphs.narrow(0,0,1), max_len=20) 
         pretty_print(affixer, Targs)
@@ -99,7 +95,7 @@ class Trainer():
         #print('pivoter W1 =', affixer.pivoter.W1.weight.data.numpy())
         #print('pivoter bias1 =', affixer.pivoter.W1.bias.data.numpy())
         #print('pivoter a =', affixer.pivoter.a.data.numpy())
-        tpr.recorder = None
+        config.recorder = None
         return None
 
 
@@ -125,22 +121,22 @@ def count_parameters(model):
 # xxx move
 def pretty_print(affixer, targs, header='**root**'):
     print('\n'+header)
-    record = tpr.recorder.dump()
-    stem = tpr.decoder.decode(record['root-stem_tpr'])[0]
-    affix = tpr.decoder.decode(record['root-affix_tpr'])[0]
-    output = tpr.decoder.decode(record['root-output_tpr'])[0]
+    record = config.recorder.dump()
+    stem = config.decoder.decode(record['root-stem_tpr'])[0]
+    affix = config.decoder.decode(record['root-affix_tpr'])[0]
+    output = config.decoder.decode(record['root-output_tpr'])[0]
     targ_segs = 'NA' if targs is None else\
-        tpr.seq_embedder.idvec2string(targs[0,:].data.numpy())
+        config.seq_embedder.idvec2string(targs[0,:].data.numpy())
     copy_stem = record['root-copy_stem'].data[0,:]
     copy_affix = record['root-copy_affix'].data[0,:]
     pivot = record['root-pivot'].data[0,:]
     unpivot = record['root-unpivot'].data[0,:]
     #morph_indx = record['root-morph_indx'].data[0,:,0]
 
-    stem_segs = tpr.seq_embedder.idvec2string(stem)
-    stem_annotated = tpr.seq_embedder.idvec2string(stem, copy_stem, pivot)
-    affix_annotated = tpr.seq_embedder.idvec2string(affix, copy_affix, unpivot)
-    output_segs = tpr.seq_embedder.idvec2string(output)
+    stem_segs = config.seq_embedder.idvec2string(stem)
+    stem_annotated = config.seq_embedder.idvec2string(stem, copy_stem, pivot)
+    affix_annotated = config.seq_embedder.idvec2string(affix, copy_affix, unpivot)
+    output_segs = config.seq_embedder.idvec2string(output)
 
     print(stem_segs, '    ', targ_segs, '    ', output_segs)
     print('annotated stem:', stem_annotated)

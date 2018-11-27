@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr
 from tpr import *
 
@@ -17,7 +18,7 @@ class GaussianPool(nn.Module):
     # map batch of soft positions to attention distributons over discrete positions
     # => output is nbatch x drole
     def forward(self, posn):
-        mu, tau = self.mu, torch.exp(self.tau) + tpr.tau_min # apply relu6 to tau? #hardtanh(self.tau, 0.0, 10.0)
+        mu, tau = self.mu, torch.exp(self.tau) + config.tau_min # apply relu6 to tau? #hardtanh(self.tau, 0.0, 10.0)
         attn = -tau*torch.pow(posn - mu, 2.0) # distance between posn and each rbf center
         attn = log_softmax(attn, 1) # normalize in log domain
         attn = torch.exp(attn) # convert to prob distribution

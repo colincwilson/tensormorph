@@ -10,6 +10,7 @@
 # - Another alternative applies hardtanh with boundaries [-1, +1]. This differs 
 # from cumulative-attention normalization, ex. (.95*1)/.95 = 1 vs. hardtanh(.95*1) = .95
 
+from environ import config
 import tpr
 from tpr import *
 
@@ -37,8 +38,8 @@ class Writer(nn.Module):
             (theta * delta0 + (1.0-theta) * delta1) * omega # accumluate attention to output roles
         self.Y, self.attn_total = Y, attn_total
 
-        if tpr.recorder is not None:
-            tpr.recorder.update_values(self.node, {
+        if config.recorder is not None:
+            config.recorder.update_values(self.node, {
                 'alpha':alpha,
                 'beta0':beta0,
                 'beta1':beta1,
@@ -70,5 +71,5 @@ class Writer(nn.Module):
 
     # initialize output and cumulative role attention
     def init(self, nbatch):
-        self.Y = torch.zeros(nbatch, tpr.dfill, tpr.drole, requires_grad=True)
-        self.attn_total = torch.zeros(nbatch, tpr.drole)
+        self.Y = torch.zeros(nbatch, config.dfill, config.drole, requires_grad=True)
+        self.attn_total = torch.zeros(nbatch, config.drole)

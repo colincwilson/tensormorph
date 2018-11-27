@@ -6,10 +6,12 @@ import collections
 import numpy as np
 import re, sys
 
+from environ import config
 import tpr
 from tpr import *
 from seq_embedder import SeqEmbedder, string2sep, string2delim
 from morph_embedder import MorphEmbedder
+
 
 DataPoint = collections.namedtuple(\
     'DataPoint',\
@@ -78,32 +80,34 @@ class DataSet():
         return None
 
 
-    # embed one example
-    def embed1(self, ex):
-        stem, morph, targ = ex['stem'], ex['morph'], ex['output']
-        stem = string2delim(stem)
-        targ = string2delim(targ)
-
-        try:    Stem = tpr.seq_embedder.string2tpr(stem, False)
-        except: print ('error embedding stem', stem)
-        try:    Morph = tpr.morph_embedder.embed(morph)
-        except: print ('error embedding morph', morph)
-        try:    Targ, targ_len = tpr.seq_embedder.string2idvec(targ, False)
-        except: print ('error embedding target', targ)
-
-        Stem = Stem.unsqueeze(0)
-        Morph = Morph.unsqueeze(0)
-        Targ = Targ.unsqueeze(0)
-        return DataPoint(stem, morph, targ, Stem, Morph, Targ, targ_len)
-
-
-    # embed training and testing examples
+     # embed training and testing examples
     def embed(self):
         self.train_embed = [self.embed1(ex)\
             for i,ex in self.train.iterrows()]
         self.test_embed  = [self.embed1(ex)\
             for i,ex in self.test.iterrows()]
         return None
+
+
+   # embed one example
+    def embed1(self, ex):
+        stem, morph, targ = ex['stem'], ex['morph'], ex['output']
+        stem = string2delim(stem)
+        targ = string2delim(targ)
+
+        seq_embedder, morph_embedder =\
+            config.seq_embedder, config.morph_embedder
+        try:    Stem = seq_embedder.string2tpr(stem, False)
+        except: print ('error embedding stem', stem)
+        try:    Morph = morph_embedder.embed(morph)
+        except: print ('error embedding morph', morph)
+        try:    Targ, targ_len = seq_embedder.string2idvec(targ, False)
+        except: print ('error embedding target', targ)
+
+        Stem    = Stem.unsqueeze(0)
+        Morph   = Morph.unsqueeze(0)
+        Targ    = Targ.unsqueeze(0)
+        return DataPoint(stem, morph, targ, Stem, Morph, Targ, targ_len)
 
 
     # get a random batch of training examples

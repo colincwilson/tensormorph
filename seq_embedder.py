@@ -4,6 +4,7 @@
 # - auto-detect vowels if vowel set not provided
 # - allow segment embeddings to be trained (except for delimiter and segment features)
 
+from environ import config
 import tpr
 from tpr import *
 import re, sys
@@ -103,7 +104,7 @@ class SeqEmbedder():
         sym2id  = self.sym2id
         y       = self.string2delim(x) if delim else x
         y       = [sym2id[yi] for yi in y.split(u' ')]
-        y_pad   = y + [0,]*(tpr.nrole - len(y))
+        y_pad   = y + [0,]*(config.nrole - len(y))
         y_pad   = torch.LongTensor(y_pad)
         return y_pad, len(y)
 
@@ -142,7 +143,6 @@ def string2sep(x):
     x = ' '.join([xi for xi in x])
     return x
 
-# convert strings to vectors or tensor-product representations
 # add word delimiters; input must be space-separated
 def string2delim(x):
     val = [stem_begin,] + [xi for xi in x.split(' ')] + [stem_end,]

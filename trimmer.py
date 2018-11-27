@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from environ import config
 import tpr, radial_basis
 from tpr import *
 from radial_basis import GaussianPool
@@ -17,13 +18,13 @@ class BiTrimmer(nn.Module):
         self.trimmer_LR = Trimmer(morpho_size, nfeature, direction = 'LR->')
         self.trimmer_RL = Trimmer(morpho_size, nfeature, direction = '<-RL')
         self.a = Parameter(torch.zeros(1))
-        #self.morph2a = nn.Linear(tpr.dmorph, 1, bias=True)
+        #self.morph2a = nn.Linear(config.dmorph, 1, bias=True)
 
     def forward(self, stem, morpho):
         alpha = sigmoid(self.a)
         copy_LR = self.trimmer_LR(stem, morpho)
         copy_RL = self.trimmer_RL(stem, morpho)
-        if tpr.discretize:
+        if config.discretize:
             alpha = torch.round(alpha)
 
         copy = alpha * copy_LR + (1.0 - alpha) * copy_RL
@@ -47,12 +48,12 @@ class Trimmer(torch.nn.Module):
         self.default = Parameter(torch.zeros(1))
         self.copy0   = Parameter(torch.zeros(1))
         if direction == 'LR->':
-            self.start, self.end, self.step = 0, tpr.nrole, 1
+            self.start, self.end, self.step = 0, config.nrole, 1
         if direction == '<-RL':
-            self.start, self.end, self.step = (tpr.nrole-1), -1, -1
+            self.start, self.end, self.step = (config.nrole-1), -1, -1
 
     def forward(self, stem, morpho):
-        nbatch, nrole, nfeature = stem.shape[0], tpr.nrole, self.nfeature
+        nbatch, nrole, nfeature = stem.shape[0], config.nrole, self.nfeature
         start, end, step = self.start, self.end, self.step
         u_phi   = torch.exp(self.u_phi).squeeze(-1)
         u_psi   = torch.exp(self.u_psi).squeeze(-1)
@@ -80,7 +81,7 @@ class Trimmer(torch.nn.Module):
         copy = copy.clone() # xxx
         # xxx add param for final word boundary?
 
-        if tpr.discretize:
+        if config.discretize:
             copy = torch.round(copy)
         
         return copy
