@@ -17,7 +17,7 @@ class config: pass
 def init(data=None, features=None, morph_embedder=None):
     from seq_embedder   import SeqEmbedder
     from morph_embedder import MorphEmbedder
-    from decoder        import LocalistDecoder
+    from decoder        import Decoder, LocalistDecoder
 
     # tensor-product representations
     config.random_fillers = False
@@ -64,9 +64,4 @@ def init(data=None, features=None, morph_embedder=None):
     data.embed()
 
     # initialize decoder
-    config.decoder      = LocalistDecoder()
-
-
-def set_morph_embedder(morph_embedder):
-    config.morph_embedder   = morph_embedder
-    config.dmorph           = morph_embedder.dmorph
+    config.decoder      = Decoder() if 0 else LocalistDecoder()

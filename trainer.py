@@ -13,10 +13,10 @@ class Trainer():
         self.model  = model
 
         optimizer = optim.Adagrad # optim.RMSprop
-        self.affixer_optim =\
-            optimizer(model.affixer.parameters(), config.learn_rate, config.dc)
+        self.model_optim =\
+            optimizer(model.parameters(), config.learn_rate, config.dc)
         self.decoder_optim =\
-            optimizer(model.decoder.parameters(), config.learn_rate, config.dc)
+            optimizer(config.decoder.parameters(), config.learn_rate, config.dc)
         self.criterion =\
             nn.CrossEntropyLoss(ignore_index=0, reduction='none')\
             if config.loss_func=='loglik' else nn.MSELoss(reduction='none')
@@ -24,8 +24,8 @@ class Trainer():
         self.regularizer = nn.L1Loss(size_average=False)
 
         print ('number of trainable parameters: ',\
-            count_parameters(model.affixer), '+',
-            count_parameters(model.decoder)
+            count_parameters(model), '+',
+            count_parameters(config.decoder)
         )
 
 
@@ -39,19 +39,19 @@ class Trainer():
 
 
     def train1(self, data, epoch, gradient_update=True):
-        affixer     = self.model.affixer
-        decoder     = self.model.decoder
+        model       = self.model
+        decoder     = config.decoder
         regularizer = self.regularizer
 
         # sample minibatch and predict outputs
-        batch = data.get_batch(config.batch_size)
+        batch = data.get_batch(nbatch=config.batch_size)
         Stems, Morphs, Targs = batch.Stems, batch.Morphs, batch.Targs
-        max_len = 20 # max(targ_len)
+        max_len = 20
         output, affix, (pivot, copy_stem, unpivot, copy_affix) =\
-            affixer(Stems, Morphs, max_len=max_len)
+            model(Stems, Morphs, max_len=max_len)
 
         # reset gradients -- this is very important
-        affixer.zero_grad()
+        model.zero_grad()
         decoder.zero_grad()
 
         # get total log-likelihood loss and value for each batch member
@@ -68,12 +68,12 @@ class Trainer():
         # report current state
         if (epoch % 50 == 0):
             print (epoch, 'loss =', loss.item())
-            self.report(affixer, decoder, Stems, Morphs, Targs)
+            self.report(model.affixer, decoder, Stems, Morphs, Targs)
 
         # update parameters
         if gradient_update:
             loss.backward()
-            self.affixer_optim.step()
+            self.model_optim.step()
             self.decoder_optim.step()
         
         return loss
@@ -101,7 +101,7 @@ class Trainer():
 
     def loglik_loss(self, output, Targs, max_len):
         # get loss vector for each batch member
-        sim    = self.model.decoder(output)
+        sim    = config.decoder(output)
         losses = self.criterion(sim, Targs)
 
         # sum losses over positions within each output,
@@ -113,8 +113,8 @@ class Trainer():
 
 
 # count number of trainable parameters
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+def count_parameters(module):
+    return sum(p.numel() for p in module.parameters() if p.requires_grad)
 
 
 # report current processing for one example
@@ -150,7 +150,7 @@ def pretty_print(affixer, targs, header='**root**'):
         print(np.round(record['root-affix_tpr'].data[0,:,1].numpy(), 2))
         print(np.round(record['root-output_tpr'].data[0,:,0].numpy(), 2))
         print(np.round(record['root-output_tpr'].data[0,:,1].numpy(), 2))
-        output_prob = tpr.decoder(record['root-output_tpr'])
+        output_prob = config.decoder(record['root-output_tpr'])
         output_prob = torch.exp(log_softmax(output_prob, 1))
         print(np.round(output_prob.data[0,:,1].numpy(), 3))
     

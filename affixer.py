@@ -74,4 +74,4 @@ class Affixer(nn.Module):
 
 
     def init(self):
-        print('Affixer.init() does nothing')
+        pass

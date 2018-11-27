@@ -120,8 +120,9 @@ class SeqEmbedder():
             return None
         Y = torch.zeros(self.dfill, self.drole)
         for i in range(n):
-            #print(i, y[i], sym2id[y[i]])
-            Y += torch.ger(F.data[:,sym2id[y[i]]], R.data[:,i]) # outer product
+            try: j = sym2id[y[i]]
+            except: print ('string2tpr error: no id for segment', y[i]) 
+            Y += torch.ger(F.data[:,j], R.data[:,i]) # outer product
         return Y
 
     # mark up output with deletion and (un)pivot indicators

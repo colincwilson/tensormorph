@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from environ import config
 import tpr
+from tpr import *
 from affixer import Affixer
-from decoder import Decoder, LocalistDecoder
 
-class Model():
-    def __init__(self):
-        affixer = Affixer(); affixer.init()
-        decoder = Decoder() if 0 else LocalistDecoder()
-        tpr.decoder = decoder
-        self.affixer = affixer
-        self.decoder = decoder
+class Model(nn.Module):
+    def __init__(self, node='root'):
+        super(Model, self).__init__()
+        self.affixer = Affixer()
+
+    def forward(self, stem, morph, max_len):
+        return self.affixer(stem, morph, max_len)

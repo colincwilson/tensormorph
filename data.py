@@ -20,7 +20,7 @@ DataPoint = collections.namedtuple(\
 
 DataBatch = collections.namedtuple(\
     'DataBatch',\
-    ['stems', 'morphs', 'targs', 'Stems', 'Morphs', 'Targs', 'targ_lens']\
+    ['stems', 'morphs', 'targs', 'Stems', 'Morphs', 'Targs', 'targ_lens', 'max_len']\
 )
 
 class DataSet():
@@ -35,6 +35,8 @@ class DataSet():
         self.test_embed     = None
 
         segments = set() if vowels is None else set(vowels)
+        for form in dat['stem']:
+            segments |= set(form.split(' '))
         for form in dat['output']:
             segments |= set(form.split(' '))
         segments = [x for x in segments]
@@ -95,8 +97,8 @@ class DataSet():
         stem = string2delim(stem)
         targ = string2delim(targ)
 
-        seq_embedder, morph_embedder =\
-            config.seq_embedder, config.morph_embedder
+        seq_embedder    = config.seq_embedder
+        morph_embedder  = config.morph_embedder
         try:    Stem = seq_embedder.string2tpr(stem, False)
         except: print ('error embedding stem', stem)
         try:    Morph = morph_embedder.embed(morph)
@@ -110,19 +112,27 @@ class DataSet():
         return DataPoint(stem, morph, targ, Stem, Morph, Targ, targ_len)
 
 
-    # get a random batch of training examples
-    def get_batch(self, nbatch=20, start_index=0):
-        train_embed = self.train_embed
-        n       = len(train_embed)
-        indx    = np.random.choice(n-start_index, nbatch, replace=False)
-        indx    = [x+start_index for x in indx]
+    # get a random batch of training examples, or all training examples 
+    # (unrandomized), or all testing examples (unrandomized)
+    def get_batch(self, type='train_rand', nbatch=20, start_index=0):
+        if type=='train_rand':
+            train_embed = self.train_embed
+            n           = len(train_embed)
+            indx        = np.random.choice(n-start_index, nbatch, replace=False)
+            batch       = [train_embed[i] for i in indx]
+        elif type=='train_all':
+            batch       = self.train_embed
+        elif type=='test_all':
+            batch       = self.test_embed
 
-        train_batch = [train_embed[i] for i in indx]
-        stems       = [ex.stem for ex in train_batch]
-        morphs      = [ex.morph for ex in train_batch]
-        targs       = [ex.targ for ex in train_batch]
-        Stems       = torch.cat([ex.Stem for ex in train_batch], 0)
-        Morphs      = torch.cat([ex.Morph for ex in train_batch], 0)
-        Targs       = torch.cat([ex.Targ for ex in train_batch], 0)
-        targ_lens   = [ex.targ_len for ex in train_batch]
-        return DataBatch(stems, morphs, targs, Stems, Morphs, Targs, targ_lens)
+        stems       = [ex.stem for ex in batch]
+        morphs      = [ex.morph for ex in batch]
+        targs       = [ex.targ for ex in batch]
+        Stems       = torch.cat([ex.Stem for ex in batch], 0)
+        Morphs      = torch.cat([ex.Morph for ex in batch], 0)
+        Targs       = torch.cat([ex.Targ for ex in batch], 0)
+        targ_lens   = [ex.targ_len for ex in batch]
+        max_len     = np.max(targ_lens)
+        return DataBatch(stems, morphs, targs,
+            Stems, Morphs, Targs,
+            targ_lens, max_len)
