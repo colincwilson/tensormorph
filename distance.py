@@ -23,3 +23,8 @@ def euclid_squared_batch(X, Y):
     dist = X_norm + Y_norm - 2.0 * torch.matmul(X.transpose(1,2), Y)
     dist = dist.transpose(1,2)
     return dist
+
+def euclid_batch(X, Y):
+    dist = euclid_squared_batch(X, Y)
+    dist = torch.pow(dist, 0.5)
+    return dist

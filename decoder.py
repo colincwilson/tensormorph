@@ -4,7 +4,7 @@
 from environ import config
 import tpr
 from tpr import *
-from distance import euclid_squared_batch
+from distance import euclid_batch, euclid_squared_batch
 
 
 # Map tensor product representation and discrete position to a
