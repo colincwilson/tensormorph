@@ -10,7 +10,7 @@ def evaluate(model, data):
     test_acc = evaluate_batch(model, data.get_batch('test_all'))    
     print ('train_acc:', train_acc, 'test_acc:', test_acc)
 
-
+# xxx calculate levenshtein distance in case of error
 def evaluate_batch(model, batch):
     pred, _, _ =\
         model(batch.Stems, batch.Morphs, max_len=20)

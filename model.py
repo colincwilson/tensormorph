@@ -6,6 +6,7 @@ import tpr
 from tpr import *
 from affixer import Affixer
 
+# xxx add subclasses for fixed affixation, reduplication
 class Model(nn.Module):
     def __init__(self, node='root'):
         super(Model, self).__init__()

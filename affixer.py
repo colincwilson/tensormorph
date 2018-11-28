@@ -9,6 +9,7 @@ from stem_modifier import StemModifier
 from thunker import Thunker
 from combiner import Combiner
 
+
 class Affixer(nn.Module):
     def __init__(self, node='root'):
         super(Affixer, self).__init__()

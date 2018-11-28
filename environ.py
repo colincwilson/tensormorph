@@ -13,8 +13,8 @@ import re, sys
 class config: pass
 
 
-# xxx read numerical params from external file
-def init(data=None, features=None, morph_embedder=None):
+# xxx read params from external file
+def init(features=None, data=None, morph_embedder=None):
     from seq_embedder   import SeqEmbedder
     from morph_embedder import MorphEmbedder
     from decoder        import Decoder, LocalistDecoder
@@ -28,16 +28,12 @@ def init(data=None, features=None, morph_embedder=None):
     config.nrole        = 30
     config.drole        = 30
     seq_embedder        = SeqEmbedder(
-        segments=data.segments,
-        vowels=data.vowels,
-        nrole=config.nrole
+        features = features,
+        segments = data.segments,
+        vowels = data.vowels,
+        nrole = config.nrole
     )
     config.seq_embedder = seq_embedder
-    config.F            = seq_embedder.F
-    config.R            = seq_embedder.R
-    config.U            = seq_embedder.U
-    config.nfill        = seq_embedder.nfill
-    config.dfill        = seq_embedder.dfill
 
     # morphology embedding
     if morph_embedder is None:

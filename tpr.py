@@ -21,8 +21,6 @@ import numpy as np
 from numpy import linalg
 import sys
 
-import randVecs
-
 # batch dot (inner) product
 def dot_batch(x, y):
     nbatch, nvec = x.shape

@@ -9,7 +9,7 @@ from matcher import Matcher3
 
 
 # combine results of scanning LR-> and <-RL
-# xxx get local role flag from tpr
+# xxx get local role flag from config
 class BiScanner(nn.Module):
     def __init__(self, morpho_size=1, nfeature=5, node=''):
         super(BiScanner, self).__init__()
@@ -168,4 +168,3 @@ class BiLSTMScanner(nn.Module):
 
         h = torch.cat([h1_old, h2_old], 1)
         return h
-
