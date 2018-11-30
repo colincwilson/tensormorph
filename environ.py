@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Initializes configs for role / unbinding / filler matrices,  
+# Initialize configs for role / unbinding / filler matrices,  
 # morph embeddings, learning parameters, etc.
 
 import torch

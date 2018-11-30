@@ -11,18 +11,20 @@ from combiner import Combiner
 
 
 class Affixer(nn.Module):
-    def __init__(self, node='root'):
+    def __init__(self, node='root', reduplication=False):
         super(Affixer, self).__init__()
         self.scanner        = BiLSTMScanner(hidden_size = 1)
         self.pivoter        = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-pivoter')
         self.stem_modifier  = StemModifier()
-        if node=='root':
-            self.reduplicator = Affixer('reduplicant')
-            self.unpivoter  = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-unpivoter')
-            self.redup      = Parameter(torch.zeros(1)) # xxx need to modulate by morph
-        self.affix_thunker  = Thunker()
         self.combiner       = Combiner()
         self.node           = node
+        self.redup          = reduplication
+
+        if node=='root' and reduplication:
+            self.reduplicator = Affixer('reduplicant')
+            self.unpivoter = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-unpivoter')
+        else:
+            self.affix_thunker = Thunker()
 
 
     # map tpr of stem to tpr of stem+affix
@@ -53,25 +55,15 @@ class Affixer(nn.Module):
 
 
     def get_affix(self, stem, morpho, max_len):
-        if self.node=='root':
-            # reduplicative affix
-            # xxx fixme
-            #affix_redup = self.reduplicator(stem, morpho, max_len)
-            #pivot_redup = self.unpivoter(affix0, morpho)
-            # non-reduplicative affix
-            affix_fixed, pivot_fixed, copy_fixed = self.affix_thunker(morpho)
-            # convex combination of two affixes
-            #redup = torch.zeros() # sigmoid(self.redup)
-            #affix = redup * affix_redup + (1.0 - redup) * affix_fixed
-            #pivot = redup * pivot_redup + (1.0 - redup) * affix_fixed
-            affix = affix_fixed
-            pivot = pivot_fixed
-            copy = copy_fixed
+        if self.redup:
+            nbatch = stem.shape[0]
+            affix, _, _ = self.reduplicator(stem, morpho.narrow(1,0,1), max_len)
+            unpivot = self.unpivoter(affix, morpho)
+            copy_affix = torch.ones((nbatch, config.nrole)) # xxx force copy
+            #print (affix.shape, unpivot.shape, copy_affix.shape)
         else:
-            # enforce non-reduplicative affix
-            affix, pivot, copy = self.affix_thunker(morpho)
-
-        return affix, pivot, copy
+            affix, unpivot, copy_affix = self.affix_thunker(morpho)
+        return affix, unpivot, copy_affix
 
 
     def init(self):

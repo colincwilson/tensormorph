@@ -5,7 +5,7 @@ from environ import config
 import tpr
 from tpr import *
 from data import DataBatch
-from model import Model
+#from model import Model
 import csv
 
 class Trainer():
@@ -68,7 +68,7 @@ class Trainer():
         # report current state
         if (epoch % 50 == 0):
             print (epoch, 'loss =', loss.item())
-            self.report(model.affixer, decoder, Stems, Morphs, Targs)
+            self.report(model, decoder, Stems, Morphs, Targs)
 
         # update parameters
         if gradient_update:
