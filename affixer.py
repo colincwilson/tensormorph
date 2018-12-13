@@ -42,8 +42,9 @@ class Affixer(nn.Module):
 
         output  = self.combiner(stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len)
 
-        # xxx new! apply phonological rules to output before decoding
-        #output = self.phono_rules(output, morpho)
+        # xxx testing! apply phonological rules to output before decoding
+        # xxx skip affixation and apply phonology only!
+        output = self.phono_rules(stem, morpho)
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {

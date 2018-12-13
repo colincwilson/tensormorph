@@ -7,7 +7,7 @@ from tpr import *
 from matcher import Matcher3
 
 # bank of phonological rules applied in parallel, 
-# each defined by a soft regex3 and a change vector
+# each defined by a soft regex3 and a change vector in [-2,+2]
 class PhonoRules(nn.Module):
     def __init__(self, morpho_size, nrule=1, node='phonology'):
         super(PhonoRules, self).__init__()
@@ -23,7 +23,8 @@ class PhonoRules(nn.Module):
         struc_descrip   = self.struc_descrip
         struc_change    = self.struc_change(morpho)\
                             .view(nbatch, nfeature, nrule)
-        struc_change = 2.0 * torch.sigmoid(struc_change)
+        struc_change = 2.0 * torch.tanh(struc_change)
+        #print (struc_change.data.numpy()); sys.exit(0)
 
         # Find matches to rule struc descriptions
         matches = struc_descrip(X, morpho)
