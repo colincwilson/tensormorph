@@ -6,7 +6,7 @@ import tpr
 from tpr import *
 from scanner import BiScanner, BiLSTMScanner
 from stem_modifier import StemModifier
-from thunker import Thunker
+from vocab_inserter import VocabInserter
 from combiner import Combiner
 
 
@@ -24,7 +24,7 @@ class Affixer(nn.Module):
             self.reduplicator = Affixer('reduplicant')
             self.unpivoter = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-unpivoter')
         else:
-            self.affix_thunker = Thunker()
+            self.affix_inserter = VocabInserter()
 
 
     # map tpr of stem to tpr of stem+affix
@@ -62,7 +62,7 @@ class Affixer(nn.Module):
             copy_affix = torch.ones((nbatch, config.nrole)) # xxx force copy
             #print (affix.shape, unpivot.shape, copy_affix.shape)
         else:
-            affix, unpivot, copy_affix = self.affix_thunker(morpho)
+            affix, unpivot, copy_affix = self.affix_inserter(morpho)
         return affix, unpivot, copy_affix
 
 

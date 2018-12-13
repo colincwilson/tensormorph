@@ -47,7 +47,7 @@ class SymbolEmbedder():
             for j,val in enumerate(ftr_matrix[ftr]):
                 # xxx enforce privativity?
                 if val == '+':
-                    F.data[i,j+2] = 1.0
+                    F.data[i,j+2] = +1.0
                 if val == '-':
                     F.data[i,j+2] = -1.0
         

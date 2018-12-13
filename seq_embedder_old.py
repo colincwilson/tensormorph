@@ -13,10 +13,6 @@ import re, sys
 
 class SeqEmbedder():
     def __init__(self, ftr_matrix=None, segments=None, vowels=None, nrole=20, random_roles=False):
-        symbol_embedder = SymbolEmbedder(ftr_matrix, segments, vowels)
-        role_embedder = RoleEmbedder(nrole, random_roles)
-        self.sym2id = { sym:i for i,sym in enumerate(config.syms) }
-        self.id2sym = { i:sym for i,sym in self.sym2id.items() }
         
 
 

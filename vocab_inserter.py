@@ -6,10 +6,10 @@ import tpr
 from tpr import *
 
 
-# affix look-up table implemented with linear map from morphosyn + stem scan
-class Thunker(nn.Module):
+# morph look-up table implemented with linear map from morphosyn + stem scan
+class VocabInserter(nn.Module):
     def __init__(self, redup=False, root=True):
-        super(Thunker, self).__init__()
+        super(VocabInserter, self).__init__()
         self.morph2affix =\
             nn.Linear(config.dmorph+2, config.dfill * config.drole, bias=True)
         self.morph2unpivot =\
