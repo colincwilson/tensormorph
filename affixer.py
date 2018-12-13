@@ -8,6 +8,7 @@ from scanner import BiScanner, BiLSTMScanner
 from stem_modifier import StemModifier
 from vocab_inserter import VocabInserter
 from combiner import Combiner
+from phonology import PhonoRules
 
 
 class Affixer(nn.Module):
@@ -19,6 +20,7 @@ class Affixer(nn.Module):
         self.combiner       = Combiner()
         self.node           = node
         self.redup          = reduplication
+        self.phono_rules    = PhonoRules(config.dmorph+2, 3) # xxx hard-code nrules
 
         if node=='root' and reduplication:
             self.reduplicator = Affixer('reduplicant')
@@ -39,6 +41,9 @@ class Affixer(nn.Module):
         affix, unpivot, copy_affix = self.get_affix(stem, morpho, max_len)
 
         output  = self.combiner(stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len)
+
+        # xxx new! apply phonological rules to output before decoding
+        #output = self.phono_rules(output, morpho)
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {

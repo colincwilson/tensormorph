@@ -56,8 +56,8 @@ class Scanner(nn.Module):
         super(Scanner, self).__init__()
         self.morpho_size = morpho_size
         self.nfeature   = nfeature
-        self.direction  = direction
-        self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
+        self.direction  = direction                     # xxxx testing xxxx #
+        self.matcher    = Matcher3(morpho_size, nfeature, npattern=1, maxout=False, node=node+'-matcher')
         self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
         if direction == 'LR->':
             self.start, self.end, self.step = 0, config.nrole, 1

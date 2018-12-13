@@ -44,11 +44,19 @@ class DataSet():
         self.segments = segments
 
 
-    # get subset defined by morphological tag
-    def subset(self, morph):
+    # get subset defined by morphological tag, 
+    # stem regex, and output regex
+    def subset(self, morph, stem_regex=None, output_regex=None):
         dat     = self.dat
-        dat_sub = dat[dat['morph'] == morph]
-        return DataSet(dat_sub, vowels=self.vowels)
+        dat1    = dat[dat['morph'] == morph]
+        #print (dat1.head())
+        if stem_regex is not None:
+            dat1 = dat1[dat1.stem.str.match(stem_regex)]
+            #print (stem_regex, len(dat1))
+        if output_regex is not None:
+            dat1 = dat1[dat1.output.str.match(output_regex)]
+            #print (output_regex, len(dat1))
+        return DataSet(dat1, vowels=self.vowels)
 
 
     # split into train and test subsets

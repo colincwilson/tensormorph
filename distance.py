@@ -30,19 +30,21 @@ def euclid_batch(X, Y):
     return dist
 
 # given: TPR X (nbatch, dfill, nrole) in [-1,+1],
-# feature values W (dfill, npattern) in [-1,+1],
-# attention weights A (dfill, npattern) in [0,1]
-# return: pairwise (weighted) Euclidean distance 
-# between fillers of X and patterns of W
+# feature values W (nbatch, dfill, npattern) in [-1,+1],
+# attention weights A (nbatch, dfill, npattern) in [0,1]
+# return: pairwise Euclidean distance D (nbatch, nrole, npattern) 
+# between fillers of X and patterns of W, optionally weighted by A
 def pairwise_distance(X, W, A=None):
-    D = X.unsqueeze(3) -\
-        W.unsqueeze(0).unsqueeze(2)
+    #print (X.shape, W.shape, A.shape)
+    D = X.unsqueeze(3) - W.unsqueeze(2)
     if A is not None:
-        D *= A.unsqueeze(0).unsqueeze(2)
+        D *= A.unsqueeze(2)
     D = torch.pow(D, 2.0)
     D = torch.sum(D, 1)
     D = torch.pow(D, 0.5)
+    #print (X.shape, W.shape, '->', D.shape)
     return (D)
+
 
 # test
 def main():

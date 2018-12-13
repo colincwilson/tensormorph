@@ -18,9 +18,8 @@ class Combiner(nn.Module):
         super(Combiner, self).__init__()
         self.morph_attender = GaussianPool(2)
         self.posn_attender  = GaussianPool(config.nrole)
-        self.writer = Writer()
-        self.node = node
-
+        self.writer         = Writer()
+        self.node           = node
 
     def forward(self, stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len):
         nbatch = stem.shape[0]
