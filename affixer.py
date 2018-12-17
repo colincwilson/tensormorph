@@ -44,6 +44,7 @@ class Affixer(nn.Module):
 
         # xxx testing! apply phonological rules to output before decoding
         # xxx skip affixation and apply phonology only!
+        # xxx add gate for applying phonology (initially near zero)
         output = self.phono_rules(stem, morpho)
 
         if config.recorder is not None:

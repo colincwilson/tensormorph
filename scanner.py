@@ -15,8 +15,8 @@ class BiScanner(nn.Module):
         super(BiScanner, self).__init__()
         self.morpho_size = morpho_size
         self.nfeature = nfeature
-        self.scanner_LR = Scanner(morpho_size, nfeature, direction = 'LR->', node=node+'-LR')
-        self.scanner_RL = Scanner(morpho_size, nfeature, direction = '<-RL', node=node+'-RL')
+        self.scanner_LR = InhibitoryScanner(morpho_size, nfeature, direction = 'LR->', node=node+'-LR')
+        self.scanner_RL = InhibitoryScanner(morpho_size, nfeature, direction = '<-RL', node=node+'-RL')
         self.morph2a    = nn.Linear(morpho_size, 1, bias=True)
         self.node = node
 
@@ -49,16 +49,53 @@ class BiScanner(nn.Module):
         #self.W1.bias.data[:] = -2.0
 
 
-# locate leftmost/rightmost/every instance of pattern -- assumes 
-# that role vectors are local so that LocalistMatcher is correct
-class Scanner(nn.Module):
+# locate leftmost/rightmost/every instance of a pattern with 
+# directional inhibition -- assumes that role vectors are local (?)
+class InhibitoryScanner(nn.Module):
+    def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
+        super(InhibitoryScanner, self).__init__()
+        self.morpho_size, self.nfeature, self.direction =\
+            morpho_size, nfeature, direction
+        self.matcher = Matcher3(morpho_size, nfeature, npattern=1, maxout=False, node=node+'-matcher')
+        self.morph2c = nn.Linear(morpho_size, 1, bias=True)
+        if direction == 'LR->': # inhibit all following positions
+            self.W_inhib = -1.0 * torch.ones((config.nrole, config.nrole))
+            self.W_inhib = torch.tril(self.W_inhib, diagonal = -1).t()
+        if direction == '<-RL': # inhibit all preceding positions
+            self.W_inhib = -1.0 * torch.ones((config.nrole, config.nrole))
+            self.W_inhib = torch.tril(self.W_inhib, diagonal = -1)
+        self.W_inhib = self.W_inhib.detach()
+        self.node = node
+
+    def forward(self, stem, morpho):
+        c       = torch.exp(self.morph2c(morpho) - 0.0)
+        match   = self.matcher(stem, morpho)
+        inhib   = torch.exp(c * torch.matmul(match, self.W_inhib))
+        scan    = match * inhib
+
+        if config.discretize:
+            scan = torch.round(scan)
+
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
+                'c':c,
+                'match':match,
+                'inhib':inhib,
+                'scan':scan
+            })
+
+        return scan
+
+
+# locate leftmost/rightmost/every instance of pattern 
+# with recurrent gating -- assumes that role vectors are local (?)
+class RecurrentScanner(nn.Module):
     def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
         super(Scanner, self).__init__()
-        self.morpho_size = morpho_size
-        self.nfeature   = nfeature
-        self.direction  = direction                     # xxxx testing xxxx #
-        self.matcher    = Matcher3(morpho_size, nfeature, npattern=1, maxout=False, node=node+'-matcher')
-        self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
+        self.morpho_size, self.nfeature, self.direction =\
+            morpho_size, nfeature, direction
+        self.matcher = Matcher3(morpho_size, nfeature, npattern=1, maxout=False, node=node+'-matcher')
+        self.morph2c = nn.Linear(morpho_size, 1, bias=True)
         if direction == 'LR->':
             self.start, self.end, self.step = 0, config.nrole, 1
         if direction == '<-RL':
@@ -68,8 +105,8 @@ class Scanner(nn.Module):
     def forward(self, stem, morpho):
         start, end, step = self.start, self.end, self.step
         nbatch, nrole = stem.shape[0], config.nrole
-        u = torch.exp(self.morph2u(morpho) - 0.0).squeeze(-1)
-        #u = torch.zeros(nbatch)
+        c = torch.exp(self.morph2c(morpho) - 0.0).squeeze(-1)
+        #c = torch.zeros(nbatch)
 
         match   = self.matcher(stem, morpho)
         #log_match = torch.log(match) # xxx change return value of matcher xxx watch out for masking!
@@ -77,7 +114,7 @@ class Scanner(nn.Module):
         h       = torch.zeros(nbatch, requires_grad=True)
         for i in range(start, end, step):
             m = match[:,i]
-            s = m * torch.exp(-u*h)
+            s = m * torch.exp(-c*h)
             h = h + m   # alt.: h = h + s -or- h = s + (1.0-s) * h
             scan[:,i] = s
 
@@ -86,7 +123,7 @@ class Scanner(nn.Module):
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {
-                'u':u,
+                'c':c,
                 'match':match,
                 'scan':scan
             })
@@ -94,46 +131,7 @@ class Scanner(nn.Module):
         return scan
 
 
-# locate leftmost/rightmost/every instance of pattern -- assumes 
-# that role vectors are local so that LocalistMatcher is correct
-# - multiplies matcher outputs by ordinal cline determined by direction
-# xxx less reliable than Scanner?
-class ClineScanner(nn.Module):
-    def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
-        super(ClineScanner, self).__init__()
-        self.morpho_size = morpho_size
-        self.nfeature   = nfeature
-        self.direction  = direction
-        self.matcher    = Matcher3(morpho_size, nfeature, node=node+'-matcher')
-        self.morph2u    = nn.Linear(morpho_size, 1, bias=True)
-        if direction == 'LR->':
-            self.start, self.end, self.step = config.nrole, 0.0, -1.0
-        if direction == '<-RL':
-            self.start, self.end, self.step = 1.0, config.nrole+1.0, 1.0
-        self.cline = torch.arange(self.start, self.end, self.step).unsqueeze(0)
-        self.node = node
-
-    def forward(self, stem, morpho):
-        #start, end, step = self.start, self.end, self.step
-        nbatch, nrole = stem.shape[0], config.nrole
-        cline = self.cline.expand(nbatch, config.nrole)
-        u = torch.exp(self.morph2u(morpho) - 0.0)
-
-        match   = self.matcher(stem, morpho)
-        scan    = u * (match * cline)
-        scan    = torch.softmax(scan, 1) # xxx use log_softmax
-
-        if config.recorder is not None:
-            config.recorder.set_values(self.node, {
-                'u':u,
-                'match':match,
-                'scan':scan
-            })
-        
-        return scan
-
-
-# scan stem in both directions with RNN cell,
+# scan stem in both directions with generic RNN cell,
 # then concatenate final outputs
 class BiLSTMScanner(nn.Module):
     def __init__(self, hidden_size=1):

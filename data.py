@@ -4,6 +4,7 @@
 from sklearn.model_selection import train_test_split
 import collections
 import numpy as np
+import pandas as pd
 import re, sys
 
 from environ import config
