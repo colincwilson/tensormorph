@@ -45,9 +45,9 @@ class Trainer():
 
         # sample minibatch and predict outputs
         batch = data.get_batch(nbatch=config.batch_size)
-        Stems, Morphs, Targs = batch.Stems, batch.Morphs, batch.Targs
+        Stems, Morphs, Outputs = batch.Stems, batch.Morphs, batch.Outputs
         max_len = 20
-        output, affix, (pivot, copy_stem, unpivot, copy_affix) =\
+        pred, affix, (pivot, copy_stem, unpivot, copy_affix) =\
             model(Stems, Morphs, max_len=max_len)
 
         # reset gradients -- this is very important
@@ -55,7 +55,7 @@ class Trainer():
         decoder.zero_grad()
 
         # get total log-likelihood loss and value for each batch member
-        loss, losses =  self.loglik_loss(output, Targs, max_len)
+        loss, losses =  self.loglik_loss(pred, Outputs, max_len)
 
         # regularize affix toward epsilon, disprefer pivoting,
         # prefer stem copying
@@ -68,7 +68,7 @@ class Trainer():
         # report current state
         if (epoch % 50 == 0):
             print (epoch, 'loss =', loss.item())
-            self.report(model, decoder, Stems, Morphs, Targs)
+            self.report(model, decoder, Stems, Morphs, Outputs)
 
         # update parameters
         if gradient_update:
@@ -79,11 +79,11 @@ class Trainer():
         return loss
 
 
-    def report(self, affixer, decoder, Stems, Morphs, Targs):
+    def report(self, affixer, decoder, Stems, Morphs, Outputs):
         config.recorder = Recorder()
-        output, _, _ =\
+        pred, _, _ =\
             affixer(Stems.narrow(0,0,1), Morphs.narrow(0,0,1), max_len=20) 
-        pretty_print(affixer, Targs)
+        pretty_print(affixer, Outputs)
         print('tau_morph =',
             np.round(affixer.combiner.morph_attender.tau.data[0], 4))
         print('tau_posn =', 
@@ -99,10 +99,10 @@ class Trainer():
         return None
 
 
-    def loglik_loss(self, output, Targs, max_len):
+    def loglik_loss(self, pred, Outputs, max_len):
         # get loss vector for each batch member
-        sim    = config.decoder(output)
-        losses = self.criterion(sim, Targs)
+        sim    = config.decoder(pred)   # xxx rename lhs
+        losses = self.criterion(sim, Outputs)
 
         # sum losses over positions within each output,
         # average over members of minibatch
@@ -119,14 +119,14 @@ def count_parameters(module):
 
 # report current processing for one example
 # xxx move
-def pretty_print(affixer, targs, header='**root**'):
+def pretty_print(affixer, outputs, header='**root**'):
     print('\n'+header)
     record = config.recorder.dump()
     stem = config.decoder.decode(record['root-stem_tpr'])[0]
     affix = config.decoder.decode(record['root-affix_tpr'])[0]
-    output = config.decoder.decode(record['root-output_tpr'])[0]
-    targ_segs = 'NA' if targs is None else\
-        config.seq_embedder.idvec2string(targs[0,:].data.numpy())
+    pred = config.decoder.decode(record['root-output_tpr'])[0]
+    output_segs = 'NA' if outputs is None else\
+        config.seq_embedder.idvec2string(outputs[0,:].data.numpy())
     copy_stem = record['root-copy_stem'].data[0,:]
     copy_affix = record['root-copy_affix'].data[0,:]
     pivot = record['root-pivot'].data[0,:]
@@ -136,9 +136,9 @@ def pretty_print(affixer, targs, header='**root**'):
     stem_segs = config.seq_embedder.idvec2string(stem)
     stem_annotated = config.seq_embedder.idvec2string(stem, copy_stem, pivot)
     affix_annotated = config.seq_embedder.idvec2string(affix, copy_affix, unpivot)
-    output_segs = config.seq_embedder.idvec2string(output)
+    pred_segs = config.seq_embedder.idvec2string(pred)
 
-    print(stem_segs, '    ', targ_segs, '    ', output_segs)
+    print(stem_segs, '    ', output_segs, '    ', pred_segs)
     print('annotated stem:', stem_annotated)
     print('annotated affix:', affix_annotated)
     print('copy_stem:', np.round(copy_stem.data.numpy(), 2))
@@ -150,9 +150,9 @@ def pretty_print(affixer, targs, header='**root**'):
         print(np.round(record['root-affix_tpr'].data[0,:,1].numpy(), 2))
         print(np.round(record['root-output_tpr'].data[0,:,0].numpy(), 2))
         print(np.round(record['root-output_tpr'].data[0,:,1].numpy(), 2))
-        output_prob = config.decoder(record['root-output_tpr'])
-        output_prob = torch.exp(log_softmax(output_prob, 1))
-        print(np.round(output_prob.data[0,:,1].numpy(), 3))
+        pred_prob = config.decoder(record['root-output_tpr'])
+        pred_prob = torch.exp(log_softmax(pred_prob, 1))
+        print(np.round(pred_prob.data[0,:,1].numpy(), 3))
     
     print(np.round(record['root-affix_tpr'].data[0,0,:].numpy(), 2))
     #print('morph_indx:', np.round(morph_indx.data.numpy(), 2))

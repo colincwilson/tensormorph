@@ -20,7 +20,7 @@ class Affixer(nn.Module):
         self.combiner       = Combiner()
         self.node           = node
         self.redup          = reduplication
-        self.phono_rules    = PhonoRules(config.dmorph+2, 3) # xxx hard-code nrules
+        self.phono_rules    = PhonoRules(config.dmorph+2)
 
         if node=='root' and reduplication:
             self.reduplicator = Affixer('reduplicant')
@@ -42,10 +42,8 @@ class Affixer(nn.Module):
 
         output  = self.combiner(stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len)
 
-        # xxx testing! apply phonological rules to output before decoding
-        # xxx skip affixation and apply phonology only!
-        # xxx add gate for applying phonology (initially near zero)
-        output = self.phono_rules(stem, morpho)
+        #output = self.phono_rules(output, morpho)
+        #output = self.phono_rules(stem, morpho)
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {

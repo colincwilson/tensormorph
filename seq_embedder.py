@@ -70,11 +70,17 @@ class SeqEmbedder():
 
 # separate elements of string with spaces
 def string2sep(x):
-    x = ' '.join([xi for xi in x])
-    return x
+    y = ' '.join([xi for xi in x])
+    return y
 
 # add word delimiters; input must be space-separated
 def string2delim(x):
-    val = [config.stem_begin,] + [xi for xi in x.split(' ')] + [config.stem_end,]
-    val = ' '.join(val)
-    return val
+    y = [config.stem_begin,] + [xi for xi in x.split(' ')] + [config.stem_end,]
+    y = ' '.join(y)
+    return y
+
+# remove word delimiters; input can be space-separated
+def string2undelim(x):
+    y = re.sub('^'+config.stem_begin+'[ ]*', '', x)
+    y = re.sub('[ ]*'+config.stem_end+'$', '', y)
+    return y

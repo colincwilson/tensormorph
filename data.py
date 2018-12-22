@@ -1,27 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from sklearn.model_selection import train_test_split
 import collections
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 import re, sys
 
 from environ import config
 import tpr
 from tpr import *
-from seq_embedder import SeqEmbedder, string2sep, string2delim
+from seq_embedder import SeqEmbedder, string2sep, string2delim, string2undelim
 from morph_embedder import MorphEmbedder
 
-
-DataPoint = collections.namedtuple(\
-    'DataPoint',\
-    ['stem', 'morph', 'targ', 'Stem', 'Morph', 'Targ', 'targ_len']\
+# todo: change to mutable recordtype
+DataPoint = collections.namedtuple(
+    'DataPoint',
+    ['stem', 'morph', 'output', 'Stem', 'Morph', 'Output', 'output_len', 'pred'],
+    defaults = (None,)*8
 )
 
-DataBatch = collections.namedtuple(\
-    'DataBatch',\
-    ['stems', 'morphs', 'targs', 'Stems', 'Morphs', 'Targs', 'targ_lens', 'max_len']\
+# todo: change to mutable recordtype
+DataBatch = collections.namedtuple(
+    'DataBatch',
+    ['stems', 'morphs', 'outputs', 'Stems', 'Morphs', 'Outputs', 'output_lens', 'max_len', 'preds'],
+    defaults = (None,)*9
 )
 
 class DataSet():
@@ -102,9 +105,9 @@ class DataSet():
 
    # embed one example
     def embed1(self, ex):
-        stem, morph, targ = ex['stem'], ex['morph'], ex['output']
-        stem = string2delim(stem)
-        targ = string2delim(targ)
+        stem, morph, output = ex['stem'], ex['morph'], ex['output']
+        stem    = string2delim(stem)
+        output  = string2delim(output)
 
         seq_embedder    = config.seq_embedder
         morph_embedder  = config.morph_embedder
@@ -112,13 +115,13 @@ class DataSet():
         except: print ('error embedding stem', stem)
         try:    Morph = morph_embedder.embed(morph)
         except: print ('error embedding morph', morph)
-        try:    Targ, targ_len = seq_embedder.string2idvec(targ, False)
-        except: print ('error embedding target', targ)
+        try:    Output, output_len = seq_embedder.string2idvec(output, False)
+        except: print ('error embedding output', output)
 
         Stem    = Stem.unsqueeze(0)
         Morph   = Morph.unsqueeze(0)
-        Targ    = Targ.unsqueeze(0)
-        return DataPoint(stem, morph, targ, Stem, Morph, Targ, targ_len)
+        Output  = Output.unsqueeze(0)
+        return DataPoint(stem, morph, output, Stem, Morph, Output, output_len)
 
 
     # get a random batch of training examples, or all training examples 
@@ -136,12 +139,25 @@ class DataSet():
 
         stems       = [ex.stem for ex in batch]
         morphs      = [ex.morph for ex in batch]
-        targs       = [ex.targ for ex in batch]
+        outputs     = [ex.output for ex in batch]
         Stems       = torch.cat([ex.Stem for ex in batch], 0)
         Morphs      = torch.cat([ex.Morph for ex in batch], 0)
-        Targs       = torch.cat([ex.Targ for ex in batch], 0)
-        targ_lens   = [ex.targ_len for ex in batch]
-        max_len     = np.max(targ_lens)
-        return DataBatch(stems, morphs, targs,
-            Stems, Morphs, Targs,
-            targ_lens, max_len)
+        Outputs     = torch.cat([ex.Output for ex in batch], 0)
+        output_lens = [ex.output_len for ex in batch]
+        max_len     = np.max(output_lens)
+        return DataBatch(
+            stems, morphs, outputs,
+            Stems, Morphs, Outputs,
+            output_lens, max_len)
+
+
+# write batch after predicting outputs
+# xxx relocate?
+def write_batch(batch, fname):
+    batch_dump = pd.DataFrame({
+        'stem':     [string2undelim(stem) for stem in batch.stems],
+        'morph':    batch.morphs,
+        'output':   [string2undelim(output) for output in batch.outputs],
+        'pred':     [string2undelim(pred) for pred in batch.preds]
+    })
+    batch_dump.to_csv(fname)

@@ -70,7 +70,8 @@ class InhibitoryScanner(nn.Module):
     def forward(self, stem, morpho):
         c       = torch.exp(self.morph2c(morpho) - 0.0)
         match   = self.matcher(stem, morpho)
-        inhib   = torch.exp(c * torch.matmul(match, self.W_inhib))
+        inhib   = torch.matmul(match, self.W_inhib)
+        inhib   = torch.exp(c * inhib)
         scan    = match * inhib
 
         if config.discretize:
