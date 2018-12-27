@@ -50,9 +50,10 @@ class DataSet():
 
     # get subset defined by morphological tag, 
     # stem regex, and output regex
-    def subset(self, morph, stem_regex=None, output_regex=None):
-        dat     = self.dat
-        dat1    = dat[dat['morph'] == morph]
+    def subset(self, morph=None, stem_regex=None, output_regex=None):
+        dat1    = self.dat
+        if morph is not None:
+            dat1    = dat1[dat1['morph'] == morph]
         #print (dat1.head())
         if stem_regex is not None:
             dat1 = dat1[dat1.stem.str.match(stem_regex)]
@@ -152,12 +153,12 @@ class DataSet():
 
 
 # write batch after predicting outputs
-# xxx relocate?
+# xxx relocate? xxx use string2undelim?
 def write_batch(batch, fname):
     batch_dump = pd.DataFrame({
-        'stem':     [string2undelim(stem) for stem in batch.stems],
-        'morph':    batch.morphs,
-        'output':   [string2undelim(output) for output in batch.outputs],
-        'pred':     [string2undelim(pred) for pred in batch.preds]
+        'stem':     [stem for stem in batch.stems],
+        'output':   [output for output in batch.outputs],
+        'morph':    [morph for morph in batch.morphs],
+        'pred':     [pred for pred in batch.preds]
     })
-    batch_dump.to_csv(fname)
+    batch_dump.to_csv(fname, index=False)

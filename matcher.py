@@ -34,29 +34,30 @@ class Matcher3(nn.Module):
         log_match_next = self.matcher_next(_X_, morpho).narrow(1,2,n)
 
         # Multiplicative (log-linear) combination of matcher outputs
-        match = torch.exp(log_match_prev + log_match_cntr + log_match_next)
+        matches = torch.exp(log_match_prev + log_match_cntr + log_match_next)
         if config.discretize:
-            match = torch.round(match)
+            matches = torch.round(matches)
 
         # Mask out match results for epsilon fillers
         mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0)\
                 .squeeze(1).unsqueeze(-1).detach()
-        match = match * mask
+        matches = matches * mask
         try:
-            assert(np.all(0.0 <= match.data.numpy()))
-            assert(np.all(match.data.numpy() <= 1.0))
+            assert(np.all(0.0 <= matches.data.numpy()))
+            assert(np.all(matches.data.numpy() <= 1.0))
         except AssertionError as e:
-            print(match.data.numpy())
+            print(matches.data.numpy())
             raise
 
         # Reduce output of matches (with squeeze or maxout)
         if self.npattern==1:
-            match = match.squeeze(-1)
+            match = matches.squeeze(-1)
         elif self.maxout:
-            match,_ = torch.max(match, 2)
+            match,_ = torch.max(matches, 2)
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {
+                'matches':matches,
                 'match':match
             })
 
@@ -105,7 +106,7 @@ class MatcherGCM(nn.Module):
     def forward(self, X, morpho):
         nbatch = X.shape[0]
         nfeature, npattern = self.nfeature, self.npattern
-        # Feature specifications in [-1,+1]
+        # Feature specifications in [-1,+1] xxx see config.privative_ftrs
         W = tanh(self.morph2W(morpho))\
             .view(nbatch, nfeature, npattern)
         #w = tanh(self.morph2w(morpho)).unsqueeze(2)

@@ -15,7 +15,7 @@ class Affixer(nn.Module):
     def __init__(self, node='root', reduplication=False):
         super(Affixer, self).__init__()
         self.scanner        = BiLSTMScanner(hidden_size = 1)
-        self.pivoter        = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, node = node+'-pivoter')
+        self.pivoter        = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, npattern = 3, node = node+'-pivoter')
         self.stem_modifier  = StemModifier()
         self.combiner       = Combiner()
         self.node           = node
@@ -42,8 +42,8 @@ class Affixer(nn.Module):
 
         output  = self.combiner(stem, affix, copy_stem, copy_affix, pivot, unpivot, max_len)
 
-        #output = self.phono_rules(output, morpho)
         #output = self.phono_rules(stem, morpho)
+        #output = self.phono_rules(output, morpho)
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {

@@ -59,10 +59,13 @@ class Trainer():
 
         # regularize affix toward epsilon, disprefer pivoting,
         # prefer stem copying
-        lambda_reg = 1.0e-3
-        loss += lambda_reg * regularizer(affix, torch.zeros_like(affix))
-        loss += lambda_reg * regularizer(pivot, torch.zeros_like(pivot))
-        loss += lambda_reg * regularizer(copy_stem, torch.ones_like(copy_stem))
+        lambda_morph = 1.0e-4
+        lambda_phon = 1.0e-0
+        loss += lambda_morph * regularizer(affix, torch.zeros_like(affix))
+        loss += lambda_morph * regularizer(pivot, torch.zeros_like(pivot))
+        loss += lambda_morph * regularizer(copy_stem, torch.ones_like(copy_stem))
+        for W in model.phono_rules.parameters():
+            loss += lambda_phon * regularizer(W, torch.zeros_like(W))
         #loss  += lambda_reg * regularizer(output, torch.zeros_like(output))
 
         # report current state
@@ -154,7 +157,7 @@ def pretty_print(affixer, outputs, header='**root**'):
         pred_prob = torch.exp(log_softmax(pred_prob, 1))
         print(np.round(pred_prob.data[0,:,1].numpy(), 3))
     
-    print(np.round(record['root-affix_tpr'].data[0,0,:].numpy(), 2))
+    #print(np.round(record['root-affix_tpr'].data[0,0,:].numpy(), 2))
     #print('morph_indx:', np.round(morph_indx.data.numpy(), 2))
     #if affixer.redup:
     #    pretty_print(affixer.affixer, None, header='**reduplicant**')

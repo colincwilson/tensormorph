@@ -12,7 +12,7 @@ from matcher import Matcher3
 # combine results of trimming LR-> and <-RL,
 # output is a copy vector (nbatch x n)
 class BiTrimmer(nn.Module):
-    def __init__(self, morpho_size, nfeature=0.0, bias=0.0):
+    def __init__(self, morpho_size, nfeature=0, bias=0.0):
         super(BiTrimmer, self).__init__()
         self.nfeature = nfeature
         self.trimmer_LR = Trimmer(morpho_size, nfeature, direction = 'LR->')

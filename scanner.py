@@ -11,12 +11,12 @@ from matcher import Matcher3
 # combine results of scanning LR-> and <-RL
 # xxx get local role flag from config
 class BiScanner(nn.Module):
-    def __init__(self, morpho_size=1, nfeature=5, node=''):
+    def __init__(self, morpho_size=1, nfeature=5, npattern=1, node=''):
         super(BiScanner, self).__init__()
         self.morpho_size = morpho_size
         self.nfeature = nfeature
-        self.scanner_LR = InhibitoryScanner(morpho_size, nfeature, direction = 'LR->', node=node+'-LR')
-        self.scanner_RL = InhibitoryScanner(morpho_size, nfeature, direction = '<-RL', node=node+'-RL')
+        self.scanner_LR = InhibitoryScanner(morpho_size, nfeature, npattern, direction = 'LR->', node=node+'-LR')
+        self.scanner_RL = InhibitoryScanner(morpho_size, nfeature, npattern, direction = '<-RL', node=node+'-RL')
         self.morph2a    = nn.Linear(morpho_size, 1, bias=True)
         self.node = node
 
@@ -52,11 +52,11 @@ class BiScanner(nn.Module):
 # locate leftmost/rightmost/every instance of a pattern with 
 # directional inhibition -- assumes that role vectors are local (?)
 class InhibitoryScanner(nn.Module):
-    def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
+    def __init__(self, morpho_size, nfeature, npattern=1, direction='LR->', node=''):
         super(InhibitoryScanner, self).__init__()
         self.morpho_size, self.nfeature, self.direction =\
             morpho_size, nfeature, direction
-        self.matcher = Matcher3(morpho_size, nfeature, npattern=1, maxout=False, node=node+'-matcher')
+        self.matcher = Matcher3(morpho_size, nfeature, npattern, maxout=(npattern>1), node=node+'-matcher')
         self.morph2c = nn.Linear(morpho_size, 1, bias=True)
         if direction == 'LR->': # inhibit all following positions
             self.W_inhib = -1.0 * torch.ones((config.nrole, config.nrole))
@@ -71,8 +71,7 @@ class InhibitoryScanner(nn.Module):
         c       = torch.exp(self.morph2c(morpho) - 0.0)
         match   = self.matcher(stem, morpho)
         inhib   = torch.matmul(match, self.W_inhib)
-        inhib   = torch.exp(c * inhib)
-        scan    = match * inhib
+        scan    = match * torch.exp(c * inhib)
 
         if config.discretize:
             scan = torch.round(scan)

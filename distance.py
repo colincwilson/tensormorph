@@ -37,9 +37,9 @@ def euclid_batch(X, Y):
 def pairwise_distance(X, W, A=None):
     #print (X.shape, W.shape, A.shape)
     D = X.unsqueeze(3) - W.unsqueeze(2)
+    D = torch.pow(D, 2.0)
     if A is not None:
         D *= A.unsqueeze(2)
-    D = torch.pow(D, 2.0)
     D = torch.sum(D, 1)
     D = torch.pow(D, 0.5)
     #print (X.shape, W.shape, '->', D.shape)

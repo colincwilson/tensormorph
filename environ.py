@@ -35,6 +35,14 @@ def init(features=None, data=None, morph_embedder=None):
     )
     config.seq_embedder = seq_embedder
 
+    # detect whether all feature values are in [0,1]
+    # (i.e., whether all features are privative)
+    ftrs_max = torch.max(config.F).item()
+    ftrs_min = torch.min(config.F).item()
+    config.privative_ftrs =\
+        (0<=ftrs_min and ftrs_max<=1.0)
+    #print ('privative features:', config.privative_ftrs); sys.exit(0)
+
     # morphology embedding
     if morph_embedder is None:
         config.morph_embedder =\
@@ -44,9 +52,9 @@ def init(features=None, data=None, morph_embedder=None):
     config.dmorph = config.morph_embedder.dmorph
 
     # learning
-    config.nepoch       = 1000
-    config.batch_size   = 40
-    config.learn_rate   = 0.1
+    config.nepoch       = 2000
+    config.batch_size   = 64
+    config.learn_rate   = 0.10
     config.dc           = 0.0
     config.lambda_reg   = 1.0e-5
     config.loss_func    = ['loglik', 'euclid'][0]

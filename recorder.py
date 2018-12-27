@@ -39,11 +39,8 @@ class Recorder:
             np.save(config.save_dir+'/role_matrix.npy', config.R)
             np.save(config.save_dir+'/unbind_matrix.npy', config.U)
             # write symbols
-            syms = np.array(config.seq_embedder.syms)
+            syms = np.array(config.syms)
             np.savetxt(config.save_dir+'/symbols.txt', syms, fmt='%s')
-            # write test forms
-            if test is not None:
-                test.to_csv(config.save_dir+'/test.csv', encoding='utf-8')
         return self.record
 
     def init(self):

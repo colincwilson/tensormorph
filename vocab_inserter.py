@@ -27,10 +27,11 @@ class VocabInserter(nn.Module):
         #affix = torch.bmm(torch.bmm(F, B_affix), Rt)
         # tpr of affix directly
         affix = self.morph2affix(morpho).view(nbatch, config.dfill, config.drole)
-        #affix = sigmoid(affix) # restrict learned affix components to [0,1]
+        # restrict learned affix values to [0,1] or [-1,+1]
+        affix = sigmoid(affix) if config.privative_ftrs\
+                else tanh(affix)
         #affix.data[0,0] = 1.0 # force affix to begin at 0th position
         #affix = config.seq_embedder.string2tpr('u m', False).unsqueeze(0).expand(nbatch, config.dfill, config.drole)   # xxx testing
-        affix = tanh(affix) # restrict learned affix components to [-1, +1]
         #affix  = tanh(PReLu(affix)) # restrict learned affix components to [0,1]
         #affix = bound_batch(affix)
         #affix = torch.zeros((nbatch, config.dfill, config.drole)) # xxx hack
