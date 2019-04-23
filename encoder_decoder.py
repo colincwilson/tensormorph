@@ -64,30 +64,31 @@ stems = [' '.join(x) for x in dat['stem']]
 outputs = [' '.join(x) for x in dat['output']]
 
 Batch = namedtuple('Batch', ['src', 'tgt', 'batch_size'])
-batch_size = 32
-nbatch = int(np.ceil(len(stems) / batch_size))
-batch_indx = np.repeat([k for k in range(nbatch)], batch_size)
-batch_indx = random.sample([k for k in batch_indx], len(stems))
-batches = []
-for k in range(nbatch):
-    examples = [(stems[i], outputs[i]) for i in range(len(stems))\
-        if batch_indx[i] == k]
-    examples.sort(key = lambda x : len(x[0]), reverse=True)
-    stems_, outputs_ = zip(*examples)
-    stem_ids, stem_lens = strings2idmat(stems_)
-    output_ids, output_lens = strings2idmat(outputs_)
-    batches.append(
-        Batch((stem_ids, stem_lens), output_ids, stem_lens.shape[0])
-    )
-train_iter = batches
+def batchify(stems, outputs, batch_size=32):
+    nbatch = int(np.ceil(len(stems) / batch_size))
+    batch_indx = np.repeat([k for k in range(nbatch)], batch_size)
+    batch_indx = random.sample([k for k in batch_indx], len(stems))
+    batches = []
+    for k in range(nbatch):
+        examples = [(stems[i], outputs[i]) for i in range(len(stems))\
+            if batch_indx[i] == k]
+        examples.sort(key = lambda x : len(x[0]), reverse=True)
+        stems_, outputs_ = zip(*examples)
+        stem_ids, stem_lens = strings2idmat(stems_)
+        output_ids, output_lens = strings2idmat(outputs_)
+        batches.append(
+            Batch((stem_ids, stem_lens), output_ids, stem_lens.shape[0])
+        )
+    return batches
 
 # # # # # # # # # #
 # Encoder-Decoder model
 device = "cuda" if torch.cuda.is_available() else "cpu"
 main_dir = '/Users/colin/Desktop/'
-hidden_size = 50
+hidden_size = 100
 train_model = True
-learning_rate = 0.1
+learning_rate = 1.0
+batch_size = 20
 max_grad_norm = 2
 
 embedding = OneHotEmbeddings(syms)
@@ -119,11 +120,12 @@ def batch2syms(batch_ids, add_stem_begin=False):
         xs.append(xi)
     return xs
 
-optim = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
+optim = torch.optim.Adadelta(model.parameters(), lr=learning_rate, weight_decay=1e-3)
 
-def train(model, batch_loss, optim, batches):
+def train(model, stems, outputs, batch_loss, optim):
     total_loss = 0.0
-    for batch in random.sample(batches, len(batches)):
+    batches = batchify(stems, outputs, batch_size)
+    for batch in batches:
         stem_ids, stem_lengths = batch.src
         output_ids = batch.tgt
         gen_outputs = model(stem_ids, output_ids, stem_lengths)
@@ -136,16 +138,17 @@ def train(model, batch_loss, optim, batches):
         optim.step()
     print (total_loss)
 
-nepoch = 100
+nepoch = 80
 for epoch in range(nepoch):
-    train(model, batch_loss, optim, train_iter)
+    train(model, stems, outputs, batch_loss, optim)
 
 # testing
-stem_ids, stem_lengths = train_iter[0].src
-output_ids = train_iter[0].tgt
-_, stem_enc, _ = model.encoder(stem_ids)
+batches = batchify(stems, outputs, len(stems))
+stem_ids, stem_lengths = batches[0].src
+output_ids = batches[0].tgt
+_, stem_encs, _ = model.encoder(stem_ids)
 dec_outputs, dec_states, dec_attns =\
-    model.decoder(stem_enc, output_ids, stem_lengths)
+    model.decoder(stem_encs, output_ids, stem_lengths)
 gen_outputs =\
     model.generator(dec_outputs)
 _, gen_ids = torch.max(gen_outputs, 2)
@@ -158,6 +161,11 @@ targ_preds = zip(targs, preds)
 for x in targ_preds:
     print (x)
 
+torch.save(model.state_dict(), main_dir +'encoder_decoder_params.pt')
+torch.save(stem_ids, main_dir +'stem_ids.pt')
+torch.save(stem_encs, main_dir +'stem_encs.pt')
+torch.save(dec_states, main_dir +'dec_states.pt')
+torch.save(dec_attns, main_dir +'dec_attns.pt')
 
 sys.exit(0)
 
