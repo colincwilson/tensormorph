@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Encoder-Decoder (after Bahdanau et al. 2014)
+# see also https://bastings.github.io/annotated_encoder_decoder/
 import torch
 import torch.nn as nn
 import onmt
@@ -33,26 +34,19 @@ class BahdanauDecoder(nn.Module):
         embed = self.embedding(tgt.squeeze(-1))
         # initialize decoder state
         s = torch.tanh(self.Ws(src_enc[0,:,:]))
+        #dec_states += [s.clone().unsqueeze(0),]
         # recurrence
         for i in range(1,tgt_len):
             # condition attention on current decoder state
             s_ = s.unsqueeze(0).expand(src_enc.shape[0],
                                         s.shape[0],
-                                        s.shape[1]) # xxx
+                                        s.shape[1])
             inpt = torch.cat([s_, src_enc], -1)
             ei = self.va(torch.tanh(self.Wa(inpt))).squeeze(-1)
             ei = ei.masked_fill(1 - src_mask, -float('inf'))
             ai = torch.exp(torch.log_softmax(ei, 0))
             #print (ai.shape, src_enc.shape); sys.exit(0)
             ci = torch.sum(ai.unsqueeze(-1) * src_enc, 0)
-
-            # update decoder state
-            inpt = torch.cat([embed[i-1,:,:], s, ci], -1)
-            zi = torch.sigmoid(self.Wz(inpt))   # update
-            ri = torch.sigmoid(self.Wr(inpt))   # reset
-            inpt = torch.cat([embed[i-1,:,:], ri * s, ci], -1)
-            si = torch.tanh(self.Wp(inpt))      # proposal
-            s = (1.0 - zi) * s  +  zi * si      # new state
 
             # compute decoder output
             inpt = torch.cat([embed[i-1,:,:], s, ci], 1)
@@ -62,6 +56,14 @@ class BahdanauDecoder(nn.Module):
             dec_states += [s.clone().unsqueeze(0),]
             dec_outputs += [ti.clone().unsqueeze(0),]
             dec_attns += [ai.clone().transpose(0,1).unsqueeze(0),]
+
+            # update decoder state
+            inpt = torch.cat([embed[i-1,:,:], s, ci], -1)
+            zi = torch.sigmoid(self.Wz(inpt))   # update
+            ri = torch.sigmoid(self.Wr(inpt))   # reset
+            inpt = torch.cat([embed[i-1,:,:], ri * s, ci], -1)
+            si = torch.tanh(self.Wp(inpt))      # proposal
+            s = (1.0 - zi) * s  +  zi * si      # new state
 
         dec_outputs = torch.cat(dec_outputs)    # (tgt_len, batch_len, nhidden)
         dec_states = torch.cat(dec_states)      # (tgt_len, batch_len, nhidden)

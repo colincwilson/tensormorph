@@ -84,7 +84,7 @@ def batchify(stems, outputs, batch_size=32):
 # # # # # # # # # #
 # Encoder-Decoder model
 device = "cuda" if torch.cuda.is_available() else "cpu"
-main_dir = '/Users/colin/Desktop/'
+main_dir = '/Users/colin/Desktop/encoder_decoder_outputs/'
 hidden_size = 100
 train_model = True
 learning_rate = 1.0
@@ -164,6 +164,7 @@ for x in targ_preds:
 torch.save(model.state_dict(), main_dir +'encoder_decoder_params.pt')
 torch.save(stem_ids, main_dir +'stem_ids.pt')
 torch.save(stem_encs, main_dir +'stem_encs.pt')
+torch.save(dec_outputs, main_dir +'dec_outputs.pt')
 torch.save(dec_states, main_dir +'dec_states.pt')
 torch.save(dec_attns, main_dir +'dec_attns.pt')
 
