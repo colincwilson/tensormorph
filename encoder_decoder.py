@@ -105,7 +105,7 @@ def batch_loss(gen_outputs, output_ids):
     loss = loglik_loss(
         gen_outputs.view(output_len*batch_len, -1),
         output_ids[1:,:,:].view(-1)
-    ) # note: combine output posn and batch dimensions
+    ) # note: collapse output posn and batch dimensions
     return loss
 
 def batch2syms(batch_ids, add_stem_begin=False):
@@ -167,72 +167,3 @@ torch.save(stem_encs, main_dir +'stem_encs.pt')
 torch.save(dec_outputs, main_dir +'dec_outputs.pt')
 torch.save(dec_states, main_dir +'dec_states.pt')
 torch.save(dec_attns, main_dir +'dec_attns.pt')
-
-sys.exit(0)
-
-
-# # # # # OLD CODE # # # # #
-
-model_saver = onmt.models.ModelSaver(
-    base_path = '/Users/colin/Desktop/',
-    model = model,
-    model_opt = 'NA',
-    fields = 'NA',
-    optim = optim)
-
-trainer = onmt.Trainer(
-    model = model,
-    train_loss = loss,
-    valid_loss = loss,
-    optim = optim,
-    report_manager = report_manager,
-    model_saver = None)
-
-if train_model:   # train model
-    print ('training ...')
-    for epoch in range(1000):
-        stats = trainer.train(
-            train_iter = train_iter,
-            train_steps = 10,
-            valid_iter = train_iter,
-            valid_steps = 10,
-            save_checkpoint_steps = 1.0e8)
-        if epoch % 100 == 0:
-            print ('loss =', stats.loss, 'n_words =', stats.n_words, 'n_correct =', stats.n_correct)
-
-    for param_tensor in model.state_dict():
-        print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-    torch.save(model.state_dict(), main_dir +'encoder_decoder_params.pt')
-else:   # restore model
-    params = torch.load(main_dir +'encoder_decoder_params.pt')
-    model.load_state_dict(params)
-
-    _, encodings, _ = model.encoder(batches[0].src[0], batches[0].src[1])
-    torch.save(encodings, main_dir +'input_encodings.pt')
-    torch.save(batches[0].src[0], main_dir +'input_symbols.pt')
-sys.exit(0)
-
-
-print ('testing ...')
-for batch in train_iter:
-    print (batch.src[0].shape)
-    print (batch.src[1])
-    print (batch.tgt.shape)
-    Pred, attns = model(batch.src[0], batch.tgt, batch.src[1])
-    pred_max = torch.argmax(Pred, 2)
-    print (pred_max)
-    sys.exit(0)
-
-
-Pred, attns = model.forward(stem_ids, output_ids, stem_lens)
-Pred = model.generator(Pred) 
-print (Pred.shape)
-pred_max = torch.argmax(Pred, -1)
-print (pred_max)
-print (output_ids.squeeze(-1))
-
-h, H, _ = encoder.forward(stem_ids, stem_lens)
-H = np.round(H.data, 3)
-print (H[:,0,:])
-
-torch.save(attns, maindir +'encoder_decoder_attns.pt')

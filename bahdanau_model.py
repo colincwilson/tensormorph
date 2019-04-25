@@ -31,7 +31,7 @@ class BahdanauDecoder(nn.Module):
         src_mask = sequence_mask(src_lengths, max_len=src_enc.size(0)).transpose(0,1)
 
         # precompute all target-side embeddings
-        embed = self.embedding(tgt.squeeze(-1))
+        tgt_embed = self.embedding(tgt.squeeze(-1))
         # initialize decoder state
         s = torch.tanh(self.Ws(src_enc[0,:,:]))
         #dec_states += [s.clone().unsqueeze(0),]
@@ -49,7 +49,7 @@ class BahdanauDecoder(nn.Module):
             ci = torch.sum(ai.unsqueeze(-1) * src_enc, 0)
 
             # compute decoder output
-            inpt = torch.cat([embed[i-1,:,:], s, ci], 1)
+            inpt = torch.cat([tgt_embed[i-1,:,:], s, ci], 1)
             ti = self.Wo(inpt)
 
             # store decoder state and output, attention distributions
@@ -58,10 +58,10 @@ class BahdanauDecoder(nn.Module):
             dec_attns += [ai.clone().transpose(0,1).unsqueeze(0),]
 
             # update decoder state
-            inpt = torch.cat([embed[i-1,:,:], s, ci], -1)
+            inpt = torch.cat([tgt_embed[i-1,:,:], s, ci], -1)
             zi = torch.sigmoid(self.Wz(inpt))   # update
             ri = torch.sigmoid(self.Wr(inpt))   # reset
-            inpt = torch.cat([embed[i-1,:,:], ri * s, ci], -1)
+            inpt = torch.cat([tgt_embed[i-1,:,:], ri * s, ci], -1)
             si = torch.tanh(self.Wp(inpt))      # proposal
             s = (1.0 - zi) * s  +  zi * si      # new state
 
