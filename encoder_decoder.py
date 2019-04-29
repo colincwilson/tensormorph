@@ -37,12 +37,16 @@ def strings2idmat(xs):
     return ids, lens
 
 # Wrapper for embedding consistent with OpenNMT-py
+# note: add 'non-epsilon' feature to break symmetry between nsym and embedding dimension
 class OneHotEmbeddings(Embeddings):
     def __init__(self, syms):
         super(Embeddings, self).__init__()
-        self.F = torch.eye(len(syms))
-        self.F[0,0] = 0
-        self.embedding = nn.Embedding(len(syms), len(syms), padding_idx=0)
+        self.F = torch.cat([
+            torch.eye(len(syms)),
+            torch.ones(1,len(syms))], 0)
+        self.F[0,0] = self.F[-1,0] = 0
+        self.F = self.F.transpose(0,1)
+        self.embedding = nn.Embedding(len(syms), len(syms)+1, padding_idx=0)
         self.embedding.weight = torch.nn.Parameter(self.F, requires_grad=False)
         self.syms = syms
         self.nsym = self.embedding.num_embeddings
@@ -59,7 +63,7 @@ dat = pd.read_csv('/Users/colin/Dropbox/TensorProductStringToStringMapping/engli
 dat['stem_len'] = [len(x) for x in dat['stem']]
 dat['output_'] = [x+'ness' for x in dat['stem']]
 dat = dat[(dat['output'] == dat['output_'])]
-dat = dat[(dat['stem_len'] < 8)]
+dat = dat[(dat['stem_len'] < 10)]
 stems = [' '.join(x) for x in dat['stem']]
 outputs = [' '.join(x) for x in dat['output']]
 
@@ -92,6 +96,8 @@ batch_size = 20
 max_grad_norm = 2
 
 embedding = OneHotEmbeddings(syms)
+#print (embedding.F.shape)
+#sys.exit(0)
 
 model = bahdanau_model.BahdanauModel(
     embedding,
@@ -128,7 +134,7 @@ def train(model, stems, outputs, batch_loss, optim):
     for batch in batches:
         stem_ids, stem_lengths = batch.src
         output_ids = batch.tgt
-        gen_outputs = model(stem_ids, output_ids, stem_lengths)
+        gen_outputs,_ = model(stem_ids, output_ids, stem_lengths)
         loss = batch_loss(gen_outputs, output_ids)
         total_loss += loss.item()
 
@@ -136,34 +142,44 @@ def train(model, stems, outputs, batch_loss, optim):
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
         optim.step()
-    print (total_loss)
+    return total_loss
 
 nepoch = 80
 for epoch in range(nepoch):
-    train(model, stems, outputs, batch_loss, optim)
+    total_loss = train(model, stems, outputs, batch_loss, optim)
+    print (total_loss)
+    if (total_loss < 1.0):
+        break
 
 # testing
 batches = batchify(stems, outputs, len(stems))
 stem_ids, stem_lengths = batches[0].src
+stem_embs = embedding(stem_ids.squeeze(-1))
 output_ids = batches[0].tgt
 _, stem_encs, _ = model.encoder(stem_ids)
 dec_outputs, dec_states, dec_attns =\
     model.decoder(stem_encs, output_ids, stem_lengths)
-gen_outputs =\
-    model.generator(dec_outputs)
+gen_outputs, gen_pre_outputs =\
+    model(stem_ids, output_ids, stem_lengths)
+    #model.generator(dec_outputs)
 _, gen_ids = torch.max(gen_outputs, 2)
 #print (np.round(gen_outputs[:,-1,:].data.numpy(), 3))
 #print (torch.max(dec_attns[:,-1,:], 1))
 
+srcs = batch2syms(stem_ids.squeeze(-1))
 targs = batch2syms(output_ids.squeeze(-1))
 preds = batch2syms(gen_ids, add_stem_begin=True)
-targ_preds = zip(targs, preds)
+targ_preds = zip(srcs, targs, preds)
 for x in targ_preds:
     print (x)
 
 torch.save(model.state_dict(), main_dir +'encoder_decoder_params.pt')
 torch.save(stem_ids, main_dir +'stem_ids.pt')
+torch.save(stem_embs, main_dir +'stem_embs.pt')
 torch.save(stem_encs, main_dir +'stem_encs.pt')
 torch.save(dec_outputs, main_dir +'dec_outputs.pt')
 torch.save(dec_states, main_dir +'dec_states.pt')
 torch.save(dec_attns, main_dir +'dec_attns.pt')
+torch.save(gen_pre_outputs, main_dir +'gen_pre_outputs.pt')
+torch.save(gen_outputs, main_dir +'gen_outputs.pt')
+torch.save(gen_ids, main_dir +'gen_ids.pt')
