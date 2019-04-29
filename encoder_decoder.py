@@ -104,6 +104,31 @@ model = bahdanau_model.BahdanauModel(
     hidden_size
 )
 
+# initalization (after Lee et al., 2015; Kann & Schutze, 2016)
+pseudo_identity_init = torch.cat([
+        torch.eye(embedding.embedding_size),
+        torch.zeros(hidden_size//2 - embedding.embedding_size, embedding.embedding_size)
+], 0)
+pseudo_identity_init = torch.cat([
+    pseudo_identity_init,
+    pseudo_identity_init,
+    pseudo_identity_init], 0)
+identity_init = torch.cat([
+        torch.eye(hidden_size//2),
+        torch.eye(hidden_size//2),
+        torch.eye(hidden_size//2)], 0)
+zero_init = torch.zeros((hidden_size//2)*3)
+model.encoder.rnn.weight_ih_l0.data = pseudo_identity_init.clone().data
+model.encoder.rnn.weight_hh_l0.data = identity_init.clone().data
+model.encoder.rnn.weight_ih_l0_reverse.data = pseudo_identity_init.clone().data
+model.encoder.rnn.weight_hh_l0_reverse.data = identity_init.clone().data
+model.encoder.rnn.bias_ih_l0.data = zero_init.clone().data
+model.encoder.rnn.bias_hh_l0.data = zero_init.clone().data
+model.encoder.rnn.bias_ih_l0_reverse.data = zero_init.clone().data
+model.encoder.rnn.bias_hh_l0_reverse.data = zero_init.clone().data
+#sys.exit(0)
+
+
 loglik_loss = nn.NLLLoss(ignore_index=0, reduction="sum")
 
 def batch_loss(gen_outputs, output_ids):
