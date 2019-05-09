@@ -17,7 +17,7 @@ class BahdanauDecoder(nn.Module):
         self.Ws = nn.Linear(nhidden, nhidden)           # state initialization
         self.Wz = nn.Linear(nemb+nhidden*2, nhidden)    # state update
         self.Wr = nn.Linear(nemb+nhidden*2, nhidden)    # state reset
-        self.Wp = nn.Linear(nemb+nhidden*2, nhidden)    # state proposal
+        self.Wn = nn.Linear(nemb+nhidden*2, nhidden)    # state proposal
         self.Wa = nn.Linear(2*nhidden, nhidden)         # attention
         self.va = nn.Linear(nhidden, 1, bias=False)     #
         self.Wo = nn.Linear(nemb+nhidden*2, nhidden)    # output
@@ -65,8 +65,8 @@ class BahdanauDecoder(nn.Module):
             zi = torch.sigmoid(self.Wz(inpt))   # update
             ri = torch.sigmoid(self.Wr(inpt))   # reset
             inpt = torch.cat([tgt_embed[i-1,:,:], ri * s, ci], -1)
-            si = torch.tanh(self.Wp(inpt))      # proposal
-            s = (1.0 - zi) * s  +  zi * si      # new state
+            ni = torch.tanh(self.Wn(inpt))      # proposal
+            s = (1.0 - zi) * s  +  zi * ni      # new state
 
         dec_outputs = torch.cat(dec_outputs)    # (tgt_len, batch_len, nhidden)
         dec_states = torch.cat(dec_states)      # (tgt_len, batch_len, nhidden)
@@ -85,8 +85,8 @@ class BahdanauGenerator(nn.Module):
     def forward(self, dec_outputs):
         # bilinear map comparing dec_outputs and output embeddings
         gen_pre_outputs = self.Wg(dec_outputs)
-        #print (gen_pre_outputs.shape, self.embedding.F.transpose(0,1).shape); sys.exit(0)
         gen_outputs = torch.matmul(gen_pre_outputs, self.embedding.F.transpose(0,1))
+        #print (gen_pre_outputs.shape, self.embedding.F.transpose(0,1).shape); sys.exit(0)
         # convert to probability distribution over output symbols
         gen_outputs = torch.log_softmax(gen_outputs, dim = -1)
         return gen_outputs, gen_pre_outputs

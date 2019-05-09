@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Encoder-Decoder (after Bahdanau et al. 2014) implemented with OpenNMT-py
+# Encoder-Decoder (after Bahdanau et al. 2014) partly implemented with OpenNMT-py
 import torch
 import torch.nn as nn
+#from torchcontrib.optim import SWA
 import onmt
 from onmt.modules.embeddings import Embeddings
 import bahdanau_model
+import sutskever_model
 import pandas as pd
 import numpy as np
 from collections import namedtuple
 import random, re, string, sys
+
+model_type = ['bahdanau', 'sutskever'][1]
 
 # # # # # # # # # #
 # Symbols, mapping from symbols to ids, and one-hot embeddings
@@ -44,6 +48,7 @@ class OneHotEmbeddings(Embeddings):
         self.F = torch.cat([
             torch.eye(len(syms)),
             torch.ones(1,len(syms))], 0)
+        # epsilon is all-zero vector
         self.F[0,0] = self.F[-1,0] = 0
         self.F = self.F.transpose(0,1)
         self.embedding = nn.Embedding(len(syms), len(syms)+1, padding_idx=0)
@@ -60,10 +65,13 @@ class OneHotEmbeddings(Embeddings):
 # # # # # # # # # #
 # Data set, batches, batch generator
 dat = pd.read_csv('/Users/colin/Dropbox/TensorProductStringToStringMapping/english/english_ness.csv')
+dat['stem'] = [x.lower() for x in dat['stem']]
 dat['stem_len'] = [len(x) for x in dat['stem']]
-dat['output_'] = [x+'ness' for x in dat['stem']]
+#dat['output_'] = [x+'ness' for x in dat['stem']] # stem+ness
+dat['output'] = [x for x in dat['stem']] # stem
+dat['output_'] = [x for x in dat['stem']]
 dat = dat[(dat['output'] == dat['output_'])]
-dat = dat[(dat['stem_len'] < 10)]
+dat = dat[(dat['stem_len'] < 5)] # < 10
 stems = [' '.join(x) for x in dat['stem']]
 outputs = [' '.join(x) for x in dat['output']]
 
@@ -89,7 +97,7 @@ def batchify(stems, outputs, batch_size=32):
 # Encoder-Decoder model
 device = "cuda" if torch.cuda.is_available() else "cpu"
 main_dir = '/Users/colin/Desktop/encoder_decoder_outputs/'
-hidden_size = 100
+hidden_size = 150 # 100
 train_model = True
 learning_rate = 1.0
 batch_size = 20
@@ -99,35 +107,40 @@ embedding = OneHotEmbeddings(syms)
 #print (embedding.F.shape)
 #sys.exit(0)
 
-model = bahdanau_model.BahdanauModel(
-    embedding,
-    hidden_size
-)
-
-# initalization (after Lee et al., 2015; Kann & Schutze, 2016)
-pseudo_identity_init = torch.cat([
-        torch.eye(embedding.embedding_size),
-        torch.zeros(hidden_size//2 - embedding.embedding_size, embedding.embedding_size)
-], 0)
-pseudo_identity_init = torch.cat([
-    pseudo_identity_init,
-    pseudo_identity_init,
-    pseudo_identity_init], 0)
-identity_init = torch.cat([
-        torch.eye(hidden_size//2),
-        torch.eye(hidden_size//2),
-        torch.eye(hidden_size//2)], 0)
-zero_init = torch.zeros((hidden_size//2)*3)
-model.encoder.rnn.weight_ih_l0.data = pseudo_identity_init.clone().data
-model.encoder.rnn.weight_hh_l0.data = identity_init.clone().data
-model.encoder.rnn.weight_ih_l0_reverse.data = pseudo_identity_init.clone().data
-model.encoder.rnn.weight_hh_l0_reverse.data = identity_init.clone().data
-model.encoder.rnn.bias_ih_l0.data = zero_init.clone().data
-model.encoder.rnn.bias_hh_l0.data = zero_init.clone().data
-model.encoder.rnn.bias_ih_l0_reverse.data = zero_init.clone().data
-model.encoder.rnn.bias_hh_l0_reverse.data = zero_init.clone().data
+if model_type=='bahdanau':
+    model = bahdanau_model.BahdanauModel(
+        embedding,
+        hidden_size
+    )
+    # initalization (after Lee et al., 2015; Kann & Schutze, 2016)
+    # xxx change to prior over weights instead of (only) initialization
+    pseudo_identity_init = torch.cat([
+            torch.eye(embedding.embedding_size),
+            torch.zeros(hidden_size//2 - embedding.embedding_size, embedding.embedding_size)
+    ], 0)
+    pseudo_identity_init = torch.cat([
+        pseudo_identity_init,
+        pseudo_identity_init,
+        pseudo_identity_init], 0)
+    identity_init = torch.cat([
+            torch.eye(hidden_size//2),
+            torch.eye(hidden_size//2),
+            torch.eye(hidden_size//2)], 0)
+    zero_init = torch.zeros((hidden_size//2)*3)
+    model.encoder.rnn.weight_ih_l0.data = pseudo_identity_init.clone().data
+    model.encoder.rnn.weight_hh_l0.data = identity_init.clone().data
+    model.encoder.rnn.weight_ih_l0_reverse.data = pseudo_identity_init.clone().data
+    model.encoder.rnn.weight_hh_l0_reverse.data = identity_init.clone().data
+    model.encoder.rnn.bias_ih_l0.data = zero_init.clone().data
+    model.encoder.rnn.bias_hh_l0.data = zero_init.clone().data
+    model.encoder.rnn.bias_ih_l0_reverse.data = zero_init.clone().data
+    model.encoder.rnn.bias_hh_l0_reverse.data = zero_init.clone().data
+else:
+    model = sutskever_model.SutskeverModel(
+        embedding,
+        hidden_size
+    )
 #sys.exit(0)
-
 
 loglik_loss = nn.NLLLoss(ignore_index=0, reduction="sum")
 
@@ -169,7 +182,7 @@ def train(model, stems, outputs, batch_loss, optim):
         optim.step()
     return total_loss
 
-nepoch = 80
+nepoch = 200
 for epoch in range(nepoch):
     total_loss = train(model, stems, outputs, batch_loss, optim)
     print (total_loss)
@@ -181,15 +194,25 @@ batches = batchify(stems, outputs, len(stems))
 stem_ids, stem_lengths = batches[0].src
 stem_embs = embedding(stem_ids.squeeze(-1))
 output_ids = batches[0].tgt
-_, stem_encs, _ = model.encoder(stem_ids)
-dec_outputs, dec_states, dec_attns =\
-    model.decoder(stem_encs, output_ids, stem_lengths)
-gen_outputs, gen_pre_outputs =\
-    model(stem_ids, output_ids, stem_lengths)
-    #model.generator(dec_outputs)
-_, gen_ids = torch.max(gen_outputs, 2)
+
+if model_type=='bahdanau':
+    _, stem_encs, _ = model.encoder(stem_ids)
+    dec_outputs, dec_states, dec_attns =\
+        model.decoder(stem_encs, output_ids, stem_lengths)
+    gen_outputs, gen_pre_outputs =\
+        model(stem_ids, output_ids, stem_lengths)
+        #model.generator(dec_outputs)
+    _, gen_ids = torch.max(gen_outputs, 2)
 #print (np.round(gen_outputs[:,-1,:].data.numpy(), 3))
 #print (torch.max(dec_attns[:,-1,:], 1))
+else:
+    for i in range(1,6):
+        stem_lensi = torch.where(stem_lengths<i, stem_lengths, torch.ones_like(stem_lengths)*i)
+        enc_finals, _, _ = model.encoder(stem_ids[0:i,:,:], stem_lensi)
+        torch.save(enc_finals, main_dir+'sutskever_enc_finals'+str(i)+'.pt')
+    gen_outputs, _ =\
+        model(stem_ids, output_ids, stem_lengths)
+    _, gen_ids = torch.max(gen_outputs, 2)
 
 srcs = batch2syms(stem_ids.squeeze(-1))
 targs = batch2syms(output_ids.squeeze(-1))
@@ -198,8 +221,11 @@ targ_preds = zip(srcs, targs, preds)
 for x in targ_preds:
     print (x)
 
-torch.save(model.state_dict(), main_dir +'encoder_decoder_params.pt')
+torch.save(embedding.F, main_dir+'F.pt')
 torch.save(stem_ids, main_dir +'stem_ids.pt')
+sys.exit(0)
+
+torch.save(model.state_dict(), main_dir +'encoder_decoder_params.pt')
 torch.save(stem_embs, main_dir +'stem_embs.pt')
 torch.save(stem_encs, main_dir +'stem_encs.pt')
 torch.save(dec_outputs, main_dir +'dec_outputs.pt')

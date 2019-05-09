@@ -10,9 +10,12 @@ class SymbolEmbedder():
         if ftr_matrix is not None:
             (syms, ftrs, nfill, dfill, F) =\
                 self.parse_feature_matrix(ftr_matrix)
+        elif vowels is not None:
+            (syms, ftrs, nfill, dfill, F) =\
+                self.get_cv_embedding(segments, vowels)
         else:
             (syms, ftrs, nfill, dfill, F) =\
-                self.get_atomic_embedding(segments, vowels)
+                self.get_onehot_embedding(segments)
         config.syms     = syms
         config.ftrs     = ftrs
         config.nfill    = nfill
@@ -54,7 +57,7 @@ class SymbolEmbedder():
         return (syms, ftrs, nfill, dfill, F)
 
 
-    def get_atomic_embedding(self, segments, vowels):
+    def get_cv_embedding(self, segments, vowels):
         epsilon     = config.epsilon
         stem_begin  = config.stem_begin
         stem_end    = config.stem_end
@@ -74,5 +77,22 @@ class SymbolEmbedder():
             F.data[4,j] = 1.0 if sym in vowels else 0.0
         for j in range(len(segments)):
             F.data[j+5, j+2] = 1.0
+        
+        return (syms, ftrs, nfill, dfill, F)
+    
+    def get_onehot_embedding(self, segments):
+        epsilon     = config.epsilon
+        stem_begin  = config.stem_begin
+        stem_end    = config.stem_end
+        syms        = [epsilon, stem_begin] + segments + [stem_end,]
+        ftrs        = syms + ['sym',]
+        nfill       = len(syms)
+        dfill       = len(ftrs)
+
+        F = torch.cat([
+            torch.eye(nfill),
+            torch.ones(1,nfill)], 0)
+        # epsilon is all-zero vector
+        F[0,0] = F[-1,0] = 0
         
         return (syms, ftrs, nfill, dfill, F)
