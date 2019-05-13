@@ -38,7 +38,7 @@ class Decoder(nn.Module):
 
     def decode(self, T):
         nbatch = T.shape[0]
-        trace  = [ [] for i in range(nbatch)]
+        trace  = [ ]
         sim = self.forward(T)
         # xxx vectorize over batch?
         for i in range(nbatch):

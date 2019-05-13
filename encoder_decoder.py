@@ -182,7 +182,7 @@ def train(model, stems, outputs, batch_loss, optim):
         optim.step()
     return total_loss
 
-nepoch = 200
+nepoch = 1 # 200
 for epoch in range(nepoch):
     total_loss = train(model, stems, outputs, batch_loss, optim)
     print (total_loss)
@@ -206,6 +206,8 @@ if model_type=='bahdanau':
 #print (np.round(gen_outputs[:,-1,:].data.numpy(), 3))
 #print (torch.max(dec_attns[:,-1,:], 1))
 else:
+    model(stem_ids, output_ids, stem_lengths)
+    torch.save(model.encoder.Z, main_dir+'sutskever_Zs.pt')
     for i in range(1,6):
         stem_lensi = torch.where(stem_lengths<i, stem_lengths, torch.ones_like(stem_lengths)*i)
         enc_finals, _, _ = model.encoder(stem_ids[0:i,:,:], stem_lensi)

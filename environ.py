@@ -8,13 +8,13 @@ import torch
 import re, sys
 
 # container for global settings
-# note: use setattr(config, "param", "val") when reading  
+# note: use setattr(config, 'param_name', 'val') when reading  
 # parameters from external file
-class config: pass
-
+class config:
+    pass
 
 # xxx read params from external file
-def init(features=None, data=None, morph_embedder=None):
+def init(features=None, data=None, morph_embedder=None, nrole=30, drole=30):
     from seq_embedder   import SeqEmbedder
     from morph_embedder import MorphEmbedder
     from decoder        import Decoder, LocalistDecoder
@@ -25,8 +25,11 @@ def init(features=None, data=None, morph_embedder=None):
     config.stem_end     = u'⋉'
     config.random_fillers = False
     config.random_roles = False
-    config.nrole        = 30
-    config.drole        = 30
+    config.nrole        = nrole
+    config.drole        = drole
+    if data is None:
+        return
+
     seq_embedder        = SeqEmbedder(
         features = features,
         segments = data.segments,

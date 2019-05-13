@@ -13,37 +13,34 @@ class GRU1(nn.Module):
         self.num_layers = num_layers    # ignored
         self.bias = bias    # ignored
         self.bidirectional = bidirectional  # ignored
-        self.W_ir = nn.Linear(input_size, hidden_size)
-        self.W_iz = nn.Linear(input_size, hidden_size)
-        self.W_in = nn.Linear(input_size, hidden_size)
-        self.W_hr = nn.Linear(hidden_size, hidden_size)
-        self.W_hz = nn.Linear(hidden_size, hidden_size)
-        self.W_hn = nn.Linear(hidden_size, hidden_size)
+        for W_ix in ['W_ir', 'W_iz', 'W_in']:
+            setattr(self, W_ix, nn.Linear(input_size, hidden_size))
+        for W_hx in ['W_hr', 'W_hz', 'W_hn']:
+            setattr(self, W_hx, nn.Linear(hidden_size, hidden_size))
+        # xxx weight initialization?
     
     def forward(self, input, input_len=None):
         max_len, batch_size, _ = input.shape
         h_init = torch.zeros(batch_size, self.hidden_size, requires_grad=False)
         R, Z, N, H = [], [], [], []
         for t in range(max_len):
-            xt = input[t,:,:]
+            x_t = input[t,:,:]
             h_prev = h_init if t==0 else H[-1]
-            rt = torch.sigmoid(self.W_ir(xt) + self.W_hr(h_prev))
-            zt = torch.sigmoid(self.W_iz(xt) + self.W_hz(h_prev))
-            nt = torch.tanh(self.W_in(xt) + rt * self.W_hn(h_prev))
-            ht = (1.0 - zt) * nt + zt * h_prev
-            R.append(rt); Z.append(zt); N.append(nt); H.append(ht)
+            r_t = torch.sigmoid(self.W_ir(x_t) + self.W_hr(h_prev))
+            z_t = torch.sigmoid(self.W_iz(x_t) + self.W_hz(h_prev))
+            n_t = torch.tanh(self.W_in(x_t) + r_t * self.W_hn(h_prev))
+            h_t = (1.0 - z_t) * n_t + z_t * h_prev
+            R.append(r_t); Z.append(z_t); N.append(n_t); H.append(h_t)
 
         for name,result in zip(['R','Z','N','H'], [R,Z,N,H]):
             setattr(self, name, torch.stack(result,0))
         if input_len is not None:
             self.mask_results(input_len)
-            print (self.H.shape, input_len.shape)
-            print (input_len)
-            return self.H[input_len-1, torch.arange(self.H.shape[0])]
-        return self.H
+            return self.H[input_len-1, torch.arange(batch_size)]
+        return self.H.unsqueeze(0)
 
     def mask_results(self, input_len):
-        batch_size = input_len.shape[0]
+        batch_size = len(input_len) #input_len.shape[0]
         mask = torch.zeros_like(self.H).byte()
         for i in range(batch_size):
             mask[:input_len[i],i,:] = 1
@@ -59,13 +56,10 @@ def main():
     gru1 = GRU1(input_size, hidden_size)
 
     inpt = torch.rand(max_len, batch_size, input_size)
-    inpt_len = torch.as_tensor([1,3,2])
-    H = gru1(inpt, inpt_len)
-    print (H.shape)
-    sys.exit(0)
-    for i in range(batch_size):
-        print (H[:,i,:])
-        print (gru1.Z[:,i,:])
+    inpt_len = torch.as_tensor([2,1,3,1])
+    H = gru1(inpt, inpt_len) # H is batch_size x hidden_size
+    print (H)
+    print (gru1.Z)
 
 if __name__ == '__main__':
     main()

@@ -4,6 +4,7 @@
 from environ import config
 import torch
 import randVecs
+import numpy as np
 import re, sys
 
 class RoleEmbedder():
@@ -16,8 +17,8 @@ class RoleEmbedder():
         if random_roles:
             R.data = torch.FloatTensor( randVecs.randVecs(nrole, nrole, np.eye(nrole)) )
             #R.data.normal_() #R.data.uniform_(-1.0, 1.0)
-            U.data = torch.FloatTensor(linalg.inv(R.data))
-            R = R.t()
+            U.data = torch.FloatTensor(np.linalg.inv(R.data))
+            R = R.t()   # xxx
 
         # successor matrix for localist roles (as in Vindiola PhD)
         # note: torodial boundary conditions

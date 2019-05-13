@@ -7,9 +7,8 @@ import torch
 import torch.nn as nn
 import onmt
 from onmt.utils.misc import sequence_mask
+from recurrent_layers import GRU1
 from bahdanau_model import BahdanauGenerator
-
-
 
 class SutskeverModel(nn.Module):
     def __init__(self, embedding, nhidden):
@@ -18,13 +17,19 @@ class SutskeverModel(nn.Module):
         self.nemb = embedding.embedding_size
         self.nhidden = nhidden
         self.embedding = embedding
-        self.encoder = onmt.encoders.RNNEncoder(
-            rnn_type = 'GRU',
-            bidirectional = False,
-            num_layers = 1,
-            hidden_size = self.nhidden,
-            dropout = 0.0,
-            embeddings = embedding)
+        if 0:
+            self.encoder = onmt.encoders.RNNEncoder(
+                rnn_type = 'GRU',
+                bidirectional = False,
+                num_layers = 1,
+                hidden_size = self.nhidden,
+                dropout = 0.0,
+                embeddings = embedding)
+        else:
+            self.encoder = GRU1(
+                input_size = self.nemb,
+                hidden_size = nhidden
+            )
         self.decoder = torch.nn.GRU(
             input_size = 0,
             hidden_size = nhidden,
@@ -40,11 +45,10 @@ class SutskeverModel(nn.Module):
 
     def forward(self, src, tgt, src_lengths, bptt=False):
         # encode source
-        enc_final, _, _ = self.encoder(src, src_lengths)
-        if enc_final.shape[0]==2:
-            enc_final = torch.cat([
-                enc_final[0,:,:], enc_final[1,:,:]],
-                -1).unsqueeze(0)
+        src_embed = self.embedding(src)
+        enc_final = self.encoder(src_embed, src_lengths)
+        if enc_final.shape[0]>1:
+            enc_final = torch.cat(torch.split(0),-1).unsqueeze(0)
         # decode
         dec_outputs, _ =\
             self.decoder(torch.zeros(tgt.shape[0], tgt.shape[1], 0), enc_final)

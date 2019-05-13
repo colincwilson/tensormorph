@@ -85,14 +85,17 @@ class SymbolEmbedder():
         stem_begin  = config.stem_begin
         stem_end    = config.stem_end
         syms        = [epsilon, stem_begin] + segments + [stem_end,]
-        ftrs        = syms + ['sym',]
+        ftrs        = ['sym,'] + syms[1:]
         nfill       = len(syms)
         dfill       = len(ftrs)
 
         F = torch.cat([
-            torch.eye(nfill),
-            torch.ones(1,nfill)], 0)
-        # epsilon is all-zero vector
-        F[0,0] = F[-1,0] = 0
-        
+            torch.ones(1,nfill-1),  # all-one non-epsilon feature
+            torch.eye(nfill-1)      # one-hots for non-epsilon symbols
+        ], 0)
+        F = torch.cat([
+            torch.zeros(dfill,1),   # all-zero epsilon vector in column 0
+            F
+        ], 1)
+
         return (syms, ftrs, nfill, dfill, F)

@@ -7,7 +7,7 @@ from os import path
 
 # read unimorph schema
 schemafile = path.join(path.dirname(__file__), 'unimorph_schema.txt')
-schema = pd.read_table(schemafile, delimiter='\t')
+schema = pd.read_csv(schemafile, delimiter='\t')
 schema['Dimension'] = [x.lower() for x in schema['Dimension']]
 schema['Feature'] = [x.lower() for x in schema['Feature']]
 schema['Label'] = [x.lower() for x in schema['Label']]
@@ -46,7 +46,7 @@ if False:
     datdir = '/Users/colin/Dropbox/TensorProductStringToStringMapping/conll-sigmorphon2018/task1/all'
     print('file,missing labels')
     for datfile in glob.glob(datdir+'/*'):
-        dat = pd.read_table(datfile, header=None)
+        dat = pd.read_csv(datfile, header=None)
         dat.columns = ['stem', 'output', 'morph']
         dat['morph'] = [x.lower() for x in dat['morph']]
         morph2 = [tag2keyvalue(x) for x in dat['morph']]

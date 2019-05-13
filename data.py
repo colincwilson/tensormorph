@@ -10,8 +10,8 @@ import re, sys
 from environ import config
 import tpr
 from tpr import *
-from seq_embedder import SeqEmbedder, string2sep, string2delim, string2undelim
-from morph_embedder import MorphEmbedder
+from seq_embedder import string2sep, string2delim, string2undelim
+#from morph_embedder import MorphEmbedder
 
 # todo: change to mutable recordtype
 DataPoint = collections.namedtuple(
