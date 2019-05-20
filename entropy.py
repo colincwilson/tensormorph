@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import tpr
-from tpr import *
+from .tpr import *
 
 # entropy of binomial variable(s) p
 def binary_entropy(p):

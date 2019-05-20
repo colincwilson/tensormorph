@@ -4,9 +4,9 @@
 # - auto-detect vowels if vowel set not provided
 # - allow segment embeddings to be trained (except for delimiter and segment features)
 
-from environ import config
-from symbol_embedder import SymbolEmbedder
-from role_embedder import RoleEmbedder
+from .environ import config
+from .symbol_embedder import SymbolEmbedder
+from .role_embedder import RoleEmbedder
 import torch
 #import tpr
 #from tpr import *
@@ -25,8 +25,8 @@ class SeqEmbedder():
 
     # map symbol to filler vector
     def sym2vec(self, x):
-        F       = config.F
-        sym2id  = self.sym2id
+        F = config.F
+        sym2id = self.sym2id
         return F.data[:, sym2id[x]]
     
     # map string to matrix of filler vectors
@@ -36,15 +36,18 @@ class SeqEmbedder():
         idx, lens = self.string2idvec(x, delim)
         return F[:,idx], lens
 
-    # map string to vector of indices
+    # map string to vector of indices (torch.LongTensor), 
+    # possibly with zero-padding at end; also return string length
     # (input must be space-separated)
-    def string2idvec(self, x, delim=True):
+    def string2idvec(self, x, delim=True, pad=False):
         sym2id  = self.sym2id
-        y       = string2delim(x) if delim else x
-        y       = [sym2id[yi] for yi in y.split(u' ')]
-        y_pad   = y + [0,]*(config.nrole - len(y))
-        y_pad   = torch.LongTensor(y_pad)
-        return y_pad, len(y)
+        y = string2delim(x) if delim else x
+        y = [sym2id[yi] for yi in y.split(u' ')]
+        y_len = torch.LongTensor([len(y),])
+        if pad:
+            y = y + [0,]*(config.nrole - len(y))
+        y = torch.LongTensor(y)
+        return y, y_len
 
     # map string to tpr
     # input must be space-separated

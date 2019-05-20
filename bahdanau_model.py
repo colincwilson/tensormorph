@@ -78,14 +78,14 @@ class BahdanauGenerator(nn.Module):
         super(BahdanauGenerator, self).__init__()
         self.embedding = embedding
         self.nhidden = nhidden
-        self.nemb = embedding.embedding_size
+        self.nemb = embedding.embedding_dim
         self.Wg = nn.Linear(nhidden, self.nemb, bias=True)
         # alt: use Bilinear directly
     
     def forward(self, dec_outputs):
         # bilinear map comparing dec_outputs and output embeddings
         gen_pre_outputs = self.Wg(dec_outputs)
-        gen_outputs = torch.matmul(gen_pre_outputs, self.embedding.F.transpose(0,1))
+        gen_outputs = torch.matmul(gen_pre_outputs, self.embedding.weight.t())
         #print (gen_pre_outputs.shape, self.embedding.F.transpose(0,1).shape); sys.exit(0)
         # convert to probability distribution over output symbols
         gen_outputs = torch.log_softmax(gen_outputs, dim = -1)
@@ -95,7 +95,7 @@ class BahdanauModel(nn.Module):
     def __init__(self, embedding, nhidden):
         super(BahdanauModel, self).__init__()
         self.nsym = embedding.nsym
-        self.nemb = embedding.embedding_size
+        self.nemb = embedding.embedding_dim
         self.nhidden = nhidden
         self.embedding = embedding
         self.encoder = onmt.encoders.RNNEncoder(

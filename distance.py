@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import tpr
-from tpr import *
+from .tpr import *
 
 # calculate squared Euclidean distance between fillers of X and columns of F
 # see: https://discuss.pytorch.org/t/efficient-distance-matrix-computation/9065

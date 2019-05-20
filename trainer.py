@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr
-from tpr import *
-from data import DataBatch
+from .environ import config
+from .tpr import *
+from .data import DataBatch
 #from model import Model
 import csv
 

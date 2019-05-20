@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-from data import DataBatch, write_batch
-from recorder import Recorder
+from .environ import config
+from .data import DataBatch, write_batch
+from .recorder import Recorder
 
 def evaluate(model, data):
     print ('evaluating ...')

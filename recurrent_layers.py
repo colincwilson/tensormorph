@@ -6,17 +6,21 @@ import torch.nn as nn
 
 # Single-layer, unidirectional GRU with no dropout
 class GRU1(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers=1, bias=True, bidirectional=False):
+    def __init__(self, input_size, hidden_size, num_layers=1, bias=True, bidirectional=False, accumulate=False):
         super(GRU1, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers    # ignored
         self.bias = bias    # ignored
         self.bidirectional = bidirectional  # ignored
+        self.accumulate = accumulate
         for W_ix in ['W_ir', 'W_iz', 'W_in']:
             setattr(self, W_ix, nn.Linear(input_size, hidden_size))
         for W_hx in ['W_hr', 'W_hz', 'W_hn']:
             setattr(self, W_hx, nn.Linear(hidden_size, hidden_size))
+        if accumulate:
+            setattr(self, 'W_ia', nn.Linear(input_size, hidden_size))
+            setattr(self, 'W_ha', nn.Linear(hidden_size, hidden_size))
         # xxx weight initialization?
     
     def forward(self, input, input_len=None):
@@ -28,8 +32,14 @@ class GRU1(nn.Module):
             h_prev = h_init if t==0 else H[-1]
             r_t = torch.sigmoid(self.W_ir(x_t) + self.W_hr(h_prev))
             z_t = torch.sigmoid(self.W_iz(x_t) + self.W_hz(h_prev))
+            #z_t = torch.zeros_like(h_prev) # enforce complete overwrite
             n_t = torch.tanh(self.W_in(x_t) + r_t * self.W_hn(h_prev))
-            h_t = (1.0 - z_t) * n_t + z_t * h_prev
+
+            if self.accumulate:
+                a_t = torch.sigmoid(self.W_ia(x_t) + self.W_ha(h_prev))
+                h_t = (1.0 - z_t) * n_t + a_t * h_prev
+            else:
+                h_t = (1.0 - z_t) * n_t + z_t * h_prev
             R.append(r_t); Z.append(z_t); N.append(n_t); H.append(h_t)
 
         for name,result in zip(['R','Z','N','H'], [R,Z,N,H]):

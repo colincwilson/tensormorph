@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr
-from tpr import *
-from distance import euclid_batch, euclid_squared_batch
+from .environ import config
+from .tpr import *
+from .distance import euclid_batch, euclid_squared_batch
 
 
 # Map tensor product representation and discrete position to a

@@ -10,9 +10,8 @@
 # - Another alternative applies hardtanh with boundaries [-1, +1]. This differs 
 # from cumulative-attention normalization, ex. (.95*1)/.95 = 1 vs. hardtanh(.95*1) = .95
 
-from environ import config
-import tpr
-from tpr import *
+from .environ import config
+from .tpr import *
 
 # xxx make version for localist roles
 class Writer(nn.Module):

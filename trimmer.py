@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from environ import config
-import tpr, radial_basis
-from tpr import *
-from radial_basis import GaussianPool
-from matcher import Matcher3
+from .environ import config
+from .tpr import *
+from .radial_basis imoprt GaussianPool
+from .matcher import Matcher3
 
 #import matplotlib
 #import matplotlib.pyplot as plt

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
+from .environ import config
 import torch
 import re, sys
 

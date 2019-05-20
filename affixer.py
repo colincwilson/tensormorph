@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr
-from tpr import *
-from scanner import BiScanner, BiLSTMScanner
-from stem_modifier import StemModifier
-from vocab_inserter import VocabInserter
-from combiner import Combiner
-from phonology import PhonoRules
+from .environ import config
+from .tpr import *
+from .scanner import BiScanner, BiLSTMScanner
+from .stem_modifier import StemModifier
+from .vocab_inserter import VocabInserter
+from .combiner import Combiner
+from .phonology import PhonoRules
 
 
 class Affixer(nn.Module):

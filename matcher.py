@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr, radial_basis
-from tpr import *
-from radial_basis import GaussianPool
-from distance import pairwise_distance
+from .environ import config
+import .tpr import *
+from .radial_basis import GaussianPool
+from .distance import pairwise_distance
 
 # soft regex match over window of length 3
 # if npattern == 1, returns matches to a single soft regex in the form (nbatch, nrole)

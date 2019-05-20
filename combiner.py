@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr, radial_basis
-from tpr import *
-from radial_basis import GaussianPool
-from writer import Writer
+from .environ import config
+from .tpr import *
+from .radial_basis import GaussianPool
+from .writer import Writer
 
 # encapsulates main hierarchical attention logic of reading / writing.
 # attention distributions are computed from gradient (scalar) indices 

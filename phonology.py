@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr
-from tpr import *
-from matcher import Matcher3
+from .environ import config
+from .tpr import *
+from .matcher import Matcher3
 
 # bank of phonological rules applied in parallel, 
 # each defined by a soft regex3 and a change vector in [-2,+2]

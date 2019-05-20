@@ -4,10 +4,8 @@
 # - apply dimensionality reduction to observed morphological embeddings
 # - allow morph embeddings to be trained
 
-import tpr
-from tpr import *
-import unimorph_util
-from unimorph_util import tag2keyvalue
+from .tpr import *
+from .unimorph_util import tag2keyvalue
 import pandas as pd
 from functools import reduce
 from collections import Counter

@@ -11,13 +11,14 @@ import re, sys
 # note: use setattr(config, 'param_name', 'val') when reading  
 # parameters from external file
 class config:
+    epsilon = u'ε'
     pass
 
 # xxx read params from external file
 def init(features=None, data=None, morph_embedder=None, nrole=30, drole=30):
-    from seq_embedder   import SeqEmbedder
-    from morph_embedder import MorphEmbedder
-    from decoder        import Decoder, LocalistDecoder
+    from .seq_embedder   import SeqEmbedder
+    from .morph_embedder import MorphEmbedder
+    from .decoder        import Decoder, LocalistDecoder
 
     # tensor-product representations
     config.epsilon      = u'ε'

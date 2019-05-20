@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
-import tpr
-from tpr import *
+from .environ import config
+from .tpr import *
 
 class GaussianPool(nn.Module):
     def __init__(self, n, tau=None):

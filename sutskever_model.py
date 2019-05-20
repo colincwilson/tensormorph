@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # Encoder-Decoder (after Sutskever et al. 2014)
-# initial state of decoder is final state of encoder
+# final state of encoder is initial state of decoder
 import torch
 import torch.nn as nn
 import onmt
 from onmt.utils.misc import sequence_mask
-from recurrent_layers import GRU1
+from .recurrent_layers import GRU1
 from bahdanau_model import BahdanauGenerator
 
 class SutskeverModel(nn.Module):

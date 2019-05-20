@@ -7,10 +7,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import re, sys
 
-from environ import config
-import tpr
-from tpr import *
-from seq_embedder import string2sep, string2delim, string2undelim
+from .environ import config
+from .tpr import *
+from .seq_embedder import string2sep, string2delim, string2undelim
 #from morph_embedder import MorphEmbedder
 
 # todo: change to mutable recordtype

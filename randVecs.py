@@ -3,7 +3,7 @@
 # port of dotProducts.m code by Don Mathis.
 import numpy as np
 
-def randVecs(N, dim, sim, lb=-1.0, ub=1.0, scale=True):
+def randVecs(N, dim, sim, lb=-1.0, ub=1.0, scale=False):
     """Create random vectors (columns) with specified similarity values.
 
     Args:

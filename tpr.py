@@ -14,8 +14,8 @@ from torch.nn.functional import hardtanh, linear, log_softmax, relu, relu6, logs
 from torch.distributions import RelaxedBernoulli
 from torch import tanh, sigmoid
 
-from environ import config
-from recorder import Recorder
+from .environ import config
+from .recorder import Recorder
 
 import numpy as np
 from numpy import linalg

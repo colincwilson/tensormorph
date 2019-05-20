@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 
 
-from environ import config
-import tpr
-from tpr import *
-
-from scanner import BiScanner
-from trimmer import BiTrimmer
+from .environ import config
+from .tpr import *
+from .scanner import BiScanner
+from .trimmer import BiTrimmer
 
 # stem modifier (after Steriade, 1988)
 class StemModifier(nn.Module):

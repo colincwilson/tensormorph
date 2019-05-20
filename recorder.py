@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from environ import config
+from .environ import config
 import numpy as np
 import pandas as pd
 import torch, sys

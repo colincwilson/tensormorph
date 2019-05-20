@@ -27,12 +27,13 @@ def string2delim(x):
     return y
 
 def string2idvec(x, delim=True):
+    y = string2delim(y)
     y = [sym2id[xi] for xi in x]
     y = torch.LongTensor(y)
     return y
 
-def strings2idmat(xs):
-    ys = [string2delim(x) for x in xs]
+def strings2idmat(xs, delim=True):
+    ys = [string2delim(x, delim) for x in xs]
     lens = torch.LongTensor([len(y) for y in ys])
     ids = [string2idvec(y) for y in ys]
     ids = nn.utils.rnn.pad_sequence(ids, batch_first=False, padding_value=0)
