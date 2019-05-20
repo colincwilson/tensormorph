@@ -15,7 +15,7 @@ class RoleEmbedder():
         R = torch.eye(nrole)
         U = torch.eye(nrole)
         if random_roles:
-            R.data = torch.FloatTensor( randVecs.randVecs(nrole, nrole, np.eye(nrole)) )
+            R.data = torch.FloatTensor( randVecs(nrole, nrole, np.eye(nrole)) )
             #R.data.normal_() #R.data.uniform_(-1.0, 1.0)
             U.data = torch.FloatTensor(np.linalg.inv(R.data))
             R = R.t()   # xxx

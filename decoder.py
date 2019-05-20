@@ -25,7 +25,7 @@ class Decoder(nn.Module):
         eps = self.eps
 
         posn = torch.LongTensor(nbatch).zero_()
-        sim = torch.zeros((nbatch, nfill, nrole), requires_grad=True)
+        sim = torch.zeros((nbatch, nfill, nrole))
         for k in range(nrole):
             posn.fill_(k)
             f = posn2filler_batch(T, posn)
@@ -34,6 +34,16 @@ class Decoder(nn.Module):
             dist = (dist**2.0).sum(1)
             sim[:,:,k] = -tau*dist + eps  # xxx disallowed in-place op?
         return sim
+    
+    def unbind(self, T):
+        nbatch = T.shape[0]
+        dfill, nrole = config.dfill, config.nrole
+        posn = torch.LongTensor(nbatch).zero_()
+        fillers = torch.zeros((nbatch, dfill, nrole))
+        for k in range(nrole):
+            posn.fill_(k)
+            fillers[:,:,k] = posn2filler_batch(T, posn)
+        return fillers
 
     def decode(self, T):
         nbatch = T.shape[0]

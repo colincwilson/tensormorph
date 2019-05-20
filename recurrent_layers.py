@@ -30,7 +30,8 @@ class GRU1(nn.Module):
         for t in range(max_len):
             x_t = input[t,:,:]
             h_prev = h_init if t==0 else H[-1]
-            r_t = torch.sigmoid(self.W_ir(x_t) + self.W_hr(h_prev))
+            #r_t = torch.sigmoid(self.W_ir(x_t) + self.W_hr(h_prev))
+            r_t = torch.ones_like(h_prev) # enforce complete preservation
             z_t = torch.sigmoid(self.W_iz(x_t) + self.W_hz(h_prev))
             #z_t = torch.zeros_like(h_prev) # enforce complete overwrite
             n_t = torch.tanh(self.W_in(x_t) + r_t * self.W_hn(h_prev))
