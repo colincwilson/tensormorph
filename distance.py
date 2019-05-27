@@ -3,9 +3,10 @@
 
 from .tpr import *
 
-# calculate squared Euclidean distance between fillers of X and columns of F
+# Squared Euclidean distance between each column of X and all columns of Y
 # see: https://discuss.pytorch.org/t/efficient-distance-matrix-computation/9065
-# X is N x (m x n), where N is batch index, Y is (m x p)
+# X is N x (m x n), where N is batch index, Y is (m x p), result is N x (p x n)
+# todo: simplify by moving m to final dimension
 def euclid_squared_batch(X, Y):
     # get ||x||^2 for each column of each batch in X
     # and reshape to N x (n x 1)
@@ -17,16 +18,19 @@ def euclid_squared_batch(X, Y):
     Y_norm = (Y**2.0).sum(0)
     Y_norm = Y_norm.unsqueeze(0).unsqueeze(1)
 
-    # compute distance, result is N x (n x p),
+    # get Euclidean distance, with resulting shape N x (n x p),
     # and reshape to N x (p x n) to better match shape of X
     dist = X_norm + Y_norm - 2.0 * torch.matmul(X.transpose(1,2), Y)
     dist = dist.transpose(1,2)
     return dist
 
+
+# Euclidean distance between each column of X and all columns of Y
 def euclid_batch(X, Y):
     dist = euclid_squared_batch(X, Y)
     dist = torch.pow(dist, 0.5)
     return dist
+
 
 # given: TPR X (nbatch, dfill, nrole) in [-1,+1],
 # feature values W (nbatch, dfill, npattern) in [-1,+1],

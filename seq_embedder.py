@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # todo
 # - auto-detect vowels if vowel set not provided
-# - allow segment embeddings to be trained (except for delimiter and segment features)
+# - allow segment embeddings to be trained (except for delimiter and existence features)
 
 from .environ import config
 from .symbol_embedder import SymbolEmbedder
@@ -57,7 +57,7 @@ class SeqEmbedder():
         y = y.split(' ')
         n = len(y)
         if n > config.nrole:
-            print('string2tpr error: string length {} longer than nrole {} for string'.format(n, config.nrole), x)
+            print('string2tpr error: length of string (={}) longer than nrole (={}) for input: {}'.format(n, config.nrole, x))
             return None
         Y = torch.zeros(config.dfill, config.drole)
         for i in range(n):
@@ -81,6 +81,7 @@ class SeqEmbedder():
         y = ' '.join(segs)
         return y
 
+# xxx make the following class-level utility functions
 # separate elements of string with spaces
 def string2sep(x):
     y = ' '.join([xi for xi in x])

@@ -14,6 +14,7 @@ class BahdanauDecoder(nn.Module):
         nsym = embedding.nsym
         nemb = embedding.embedding_size
         self.embedding = embedding
+        # todo: clean up
         self.Ws = nn.Linear(nhidden, nhidden)           # state initialization
         self.Wz = nn.Linear(nemb+nhidden*2, nhidden)    # state update
         self.Wr = nn.Linear(nemb+nhidden*2, nhidden)    # state reset
@@ -73,6 +74,7 @@ class BahdanauDecoder(nn.Module):
         dec_attns = torch.cat(dec_attns)        # (tgt_len, batch_len, src_lengths)
         return dec_outputs, dec_states, dec_attns
 
+
 class BahdanauGenerator(nn.Module):
     def __init__(self, embedding, nhidden):
         super(BahdanauGenerator, self).__init__()
@@ -90,6 +92,7 @@ class BahdanauGenerator(nn.Module):
         # convert to probability distribution over output symbols
         gen_outputs = torch.log_softmax(gen_outputs, dim = -1)
         return gen_outputs, gen_pre_outputs
+
 
 class BahdanauModel(nn.Module):
     def __init__(self, embedding, nhidden):

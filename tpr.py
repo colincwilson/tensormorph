@@ -23,9 +23,9 @@ import sys
 
 # batch dot (inner) product
 def dot_batch(x, y):
-    nbatch, nvec = x.shape
-    val = torch.bmm(x.view(nbatch,1,nvec),\
-                    y.view(nbatch,nvec,1))
+    batch_size, dim = x.shape
+    val = torch.bmm(x.view(batch_size, 1, dim),\
+                    y.view(batch_size, dim, 1))
     val = val.squeeze(1)
     return val
     #val = torch.einsum('aj,aj->a', [x, y])
@@ -191,10 +191,10 @@ def normalize_length(X, dim=1):
 # bound columns of each batch within [-1,1]
 # xxx move elsewhere
 def bound_batch_old(X):
-        nbatch, m, n = X.shape
+        batch_size, m, n = X.shape
         Y = torch.zeros_like(X)
         ones = torch.ones((1, n))
-        for i in range(nbatch):
+        for i in range(batch_size):
             Xi = X[i,:,:]
             maxi = torch.max(Xi, 0)[0].view(1, n)
             mini = torch.min(Xi, 0)[0].view(1, n)
@@ -207,12 +207,12 @@ def bound_batch_old(X):
 # bound columns of each batch within [-1,1]
 # xxx move elsewhere
 def bound_batch(X):
-    nbatch, m, n = X.shape
-    ones = torch.ones((nbatch,1,n))
-    maxi = torch.max(X, 1)[0].view(nbatch, 1, n)
-    mini = torch.min(X,1)[0].view(nbatch, 1, n)
+    batch_size, m, n = X.shape
+    ones = torch.ones((batch_size,1,n))
+    maxi = torch.max(X, 1)[0].view(batch_size, 1, n)
+    mini = torch.min(X,1)[0].view(batch_size, 1, n)
     maxi = torch.cat((maxi, -mini, ones), 1)
-    maxi = torch.max(maxi, 1)[0].view(nbatch, 1, n)
+    maxi = torch.max(maxi, 1)[0].view(batch_size, 1, n)
     Y = X / maxi
     #delta = torch.sum(torch.sum(Y - rescale_batch(X), 0), 0)
     #print(delta.data[0])

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# port of dotProducts.m code by Don Mathis.
+# includes port of dotProducts.m code by Don Mathis.
 import numpy as np
 
+
+# todo: reorder N and dim arguments throughout, make N==dim default
 def randVecs(N, dim, sim, lb=-1.0, ub=1.0, scale=False):
     """Create random vectors (columns) with specified similarity values.
 
@@ -18,8 +20,9 @@ def randVecs(N, dim, sim, lb=-1.0, ub=1.0, scale=False):
     M = randVecs2(N, dim, dpMatrix, lb, ub, scale)
     return M
 
+
 def randVecs2(N, dim, dpMatrix, lb=-1.0, ub=1.0, scale=True):
-    M = np.matrix(np.random.rand(dim,N)) # xxx respect bounds at initialization
+    M = np.matrix(np.random.rand(dim, N)) # xxx respect bounds at initialization
     step0 = 0.1
     tol = 1e-6
     maxIts = 50000
@@ -38,10 +41,24 @@ def randVecs2(N, dim, dpMatrix, lb=-1.0, ub=1.0, scale=True):
     print('randVecs2: Failed to find solution to tolerance in specified iterations')
     return M
 
+
+# todo: replace with randSphere
 def indepVecs(N, dim, lb=0.0, ub=1.0):
     # xxx only correct for lb = 0, ub = 1
     M = np.random.rand(dim, N)
     return M
+
+
+# Generate N unit length vectors on the sphere S^dim
+# see among others https://stats.stackexchange.com/questions/7977/how-to-generate-uniformly-distributed-points-on-the-surface-of-the-3-d-unit-sphe
+def randSphere(N, dim):
+    M = np.random.randn(dim, N)
+    M /= np.linalg.norm(M, axis=0)
+    M_inv = np.linalg.inv(M).T
+    #print (M.T @ M)
+    #print (np.round(M.T @ M_inv, 5)) 
+    return M
+
 
 def test():
     M = randVecs(5, 5, np.identity(5), scale=False)
@@ -56,6 +73,10 @@ def test():
     Minv = np.linalg.inv(M)
     print (Minv)
     print (M[:,0] * M[:,1])
+
+    print ('randSphere test')
+    M = randSphere(5, 5)
+    print (M)
 
 if __name__ == "__main__":
     test()

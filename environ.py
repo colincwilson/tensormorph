@@ -11,7 +11,12 @@ import re, sys
 # note: use setattr(config, 'param_name', 'val') when reading  
 # parameters from external file
 class config:
-    epsilon = u'ε'
+    # tensor-product representations
+    epsilon             = u'ε'
+    stem_begin          = u'⋊'
+    stem_end            = u'⋉'
+    random_fillers      = False
+    random_roles        = False
     pass
 
 # xxx read params from external file
