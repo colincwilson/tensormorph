@@ -49,7 +49,7 @@ def indepVecs(N, dim, lb=0.0, ub=1.0):
     return M
 
 
-# Generate N unit length vectors on the sphere S^dim
+# Generate N unit-length vectors on surface of sphere S^dim
 # see among others https://stats.stackexchange.com/questions/7977/how-to-generate-uniformly-distributed-points-on-the-surface-of-the-3-d-unit-sphe
 def randSphere(N, dim):
     M = np.random.randn(dim, N)
@@ -57,6 +57,14 @@ def randSphere(N, dim):
     M_inv = np.linalg.inv(M).T
     #print (M.T @ M)
     #print (np.round(M.T @ M_inv, 5)) 
+    return M
+
+
+# Generate N unit-length nonnegative vectors on surface of sphere S^dim
+def randSpherePos(N, dim):
+    M = np.abs(np.random.randn(dim, N))
+    M /= np.linalg.norm(M, axis=0)
+    M_inv = np.linalg.inv(M).T
     return M
 
 
@@ -74,8 +82,12 @@ def test():
     print (Minv)
     print (M[:,0] * M[:,1])
 
-    print ('randSphere test')
+    print ('randSphere')
     M = randSphere(5, 5)
+    print (M)
+
+    print ('randSpherePos')
+    M = randSpherePos(5, 5)
     print (M)
 
 if __name__ == "__main__":
