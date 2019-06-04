@@ -8,18 +8,24 @@ import numpy as np
 import re, sys
 
 class RoleEmbedder():
-    def __init__(self, nrole, random_roles=False):
-        # role vectors (nrole x drole), and unbinding vectors (nrole x drole),
-        # where in the case of tprs U = (R^{-1})
-        # note: use transpose of role matrix to facilitate (soft) indexation of columns
-        R = torch.eye(nrole)
-        U = torch.eye(nrole)
-        if random_roles:
-            # random orthonormal roles
-            R.data = torch.FloatTensor( randVecs(nrole, nrole, np.eye(nrole)) )
-            #R.data.normal_() #R.data.uniform_(-1.0, 1.0)
-            U.data = torch.FloatTensor(np.linalg.inv(R.data))
-            R = R.t()   # xxx
+    def __init__(self, nrole, randVecs_kwargs=None):
+        """
+        Create (currently only LR->) role vectors (drole x nrole) and 
+        corresponding unbinding vectors (also drole x nrole), where for 
+        exact TPR unbinding U = inv(R).
+        ??? note: use transpose of role matrix to facilitate (soft) indexation of columns
+        """
+        if randVecs_kwargs is None:
+            R = np.eye(nrole)
+        else:
+            randVecs_kwargs['n'] = nrole
+            randVecs_kwargs['dim'] = nrole
+            R = randVecs(**randVecs_kwargs)
+        R = torch.FloatTensor(R)
+        R.requires_grad = False
+
+        U = torch.FloatTensor(np.linalg.inv(R)).t()
+        U.requires_grad = False
 
         # successor matrix for localist roles (as in Vindiola PhD)
         # note: torodial boundary conditions

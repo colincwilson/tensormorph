@@ -2,20 +2,38 @@
 # -*- coding: utf-8 -*-
 
 from .environ import config
+from .randVecs import randVecs
 import torch
+import pandas as pd
 import re, sys
 
+# xxx todo: change nfill -> nsym, dfill -> dsym throughout
+
 class SymbolEmbedder():
-    def __init__(self, ftr_matrix=None, segments=None, vowels=None):
-        if ftr_matrix is not None:
+    """
+    Create segment embeddings from a preloaded feature matrix or feature file, 
+    otherwise create one-hot or random embeddings from a list of segments.
+    Adds a 'symbol existence (sym)' feature, features to identify initial and 
+    final boundary symbols, and either detects or can create privative features 
+    specifying consonants (C) and vowels (V); the existence and delimiter features 
+    and special symbols (epsilon, delimiters) are purely internal should not be 
+    included in input feature matrices or files.
+    Args (all optional):
+        feature_matrix: pandas DataFrame or filename
+        segments (list): ordinary symbols
+        vowels (list): ordinary symbols that are vowels
+        randVecs_arg (list): arguments passed to randVecs
+    """
+    def __init__(self, feature_matrix=None, segments=None, 
+                        vowels=None, randVecs_kwargs=None):
+        if feature_matrix is not None:
+            if isinstance(feature_matrix, str):
+                feature_matrix = pd.read_csv(feature_matrix)
             (syms, ftrs, nfill, dfill, F) =\
-                self.parse_feature_matrix(ftr_matrix)
-        elif vowels is not None:
-            (syms, ftrs, nfill, dfill, F) =\
-                self.get_cv_embedding(segments, vowels)
+                self.parse_feature_matrix(feature_matrix)
         else:
             (syms, ftrs, nfill, dfill, F) =\
-                self.get_onehot_embedding(segments)
+                self.make_embedding(segments, vowels, randVecs_kwargs)
         config.syms     = syms
         config.ftrs     = ftrs
         config.nfill    = nfill
@@ -24,6 +42,10 @@ class SymbolEmbedder():
 
 
     def parse_feature_matrix(self, ftr_matrix):
+        """
+        Read features from a pandas DataFrame with initial column named 'segment', 
+        detecting the feature that distinguishes vowels from consonants.
+        """
         epsilon     = config.epsilon
         stem_begin  = config.stem_begin
         stem_end    = config.stem_end
@@ -36,18 +58,19 @@ class SymbolEmbedder():
         syms    = [epsilon, stem_begin] + segments + [stem_end,]
         ftrs    = ['sym', 'begin', 'end', 'C', 'V'] + features
         nfill   = len(syms)     # segments + special symbols
-        dfill   = len(ftrs)     # regular + special features
+        dfill   = len(ftrs)     # ordinary + special features
 
         F = torch.zeros((dfill, nfill))
         F.data[0,1:]    = 1.0   # non-epsilon feature
         F.data[1,1]     = 1.0   # stem-begin feature
         F.data[2,-1]    = 1.0   # stem-end feature
-        for j,sym in enumerate(syms):
+        for j,sym in enumerate(syms):   # C and V features
             F.data[3,j] = 1.0 if sym in consonants else 0.0
             F.data[4,j] = 1.0 if sym in vowels else 0.0
         for ftr in features:
             i = ftrs.index(ftr)
             for j,val in enumerate(ftr_matrix[ftr]):
+                # todo: skip vowel_ftr
                 # xxx enforce privativity?
                 if val == '+':
                     F.data[i,j+2] = +1.0
@@ -57,45 +80,47 @@ class SymbolEmbedder():
         return (syms, ftrs, nfill, dfill, F)
 
 
-    def get_cv_embedding(self, segments, vowels):
-        epsilon     = config.epsilon
-        stem_begin  = config.stem_begin
-        stem_end    = config.stem_end
-        consonants = [x for x in segments if x not in vowels]
-
-        syms    = [epsilon, stem_begin] + segments + [stem_end,]
-        ftrs    = ['sym', 'begin', 'end', 'C', 'V'] + segments
-        nfill   = len(syms)
-        dfill   = len(ftrs)
-
-        F = torch.zeros((dfill, nfill))
-        F.data[0,1:]    = 1.0   # non-epsilon feature
-        F.data[1,1]     = 1.0   # stem-begin feature
-        F.data[2,-1]    = 1.0   # stem-end feature
-        for j,sym in enumerate(syms):
-            F.data[3,j] = 1.0 if sym in consonants else 0.0
-            F.data[4,j] = 1.0 if sym in vowels else 0.0
-        for j in range(len(segments)):
-            F.data[j+5, j+2] = 1.0
+    def make_embedding(self, segments=None, vowels=None, randVecs_kwargs=None):
+        """
+        Construct symbol embedding from list of segments, etc.
+        """
+        epsilon = config.epsilon
+        stem_begin = config.stem_begin
+        stem_end = config.stem_end
         
-        return (syms, ftrs, nfill, dfill, F)
-    
-    def get_onehot_embedding(self, segments):
-        epsilon     = config.epsilon
-        stem_begin  = config.stem_begin
-        stem_end    = config.stem_end
-        syms        = [epsilon, stem_begin] + segments + [stem_end,]
-        ftrs        = ['sym,'] + syms[1:]
-        nfill       = len(syms)
-        dfill       = len(ftrs)
+        # Collect ordinary and special symbols and features
+        syms = [epsilon, stem_begin] + segments + [stem_end,]
+        ftrs = ['sym', 'begin']
+        if vowels is not None:
+            ftrs += ['C', 'V']
+        ftrs += segments + ['end',]
+        nfill = len(syms)
+        dfill = len(ftrs)
 
-        F = torch.cat([
-            torch.ones(1,nfill-1),  # all-one non-epsilon feature
-            torch.eye(nfill-1)      # one-hots for non-epsilon symbols
-        ], 0)
-        F = torch.cat([
-            torch.zeros(dfill,1),   # all-zero epsilon vector in column 0
-            F
-        ], 1)
+        # Embedding matrix
+        F = torch.zeros(dfill, nfill, requires_grad=False)
+        F.data[0,1:] = 1.0   # Symbol existence feature
+        F.data[1,1] = 1.0    # Stem-begin feature
+        F.data[-1,-1] = 1.0  # Stem-end feature
+
+        # C and V features
+        if vowels is not None:
+            for j,x in enumerate(syms):
+                F.data[2,j] = 1.0 if (x not in vowels) else 0.0
+                F.data[3,j] = 1.0 if (x in vowels) else 0.0
+
+        # Random or one-hot embeddings of ordinary symbols
+        if randVecs_kwargs is None:
+            F1 = torch.eye(nfill-3)
+        else:
+            randVecs_kwargs['n'] = nfill-3
+            randVecs_kwargs['dim'] = nfill-3
+            F1 = torch.FloatTensor(
+                randVecs(**randVecs_kwargs)
+            )
+
+        i = 2 if vowels is None else 4
+        j = 2
+        F.data[i:-1,j:-1] = F1.data
 
         return (syms, ftrs, nfill, dfill, F)
