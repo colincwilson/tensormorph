@@ -13,11 +13,14 @@ import torch
 import re, sys
 
 class SeqEmbedder():
-    def __init__(self, features=None, segments=None, vowels=None, nrole=None, random_roles=False):
-        if nrole is not None:
-            config.nrole = nrole
-        self.symbol_embedder = SymbolEmbedder(features, segments, vowels)
-        self.role_embedder = RoleEmbedder(nrole, random_roles)
+    def __init__(self, symbol_params, role_params):
+        self.symbol_embedder = SymbolEmbedder(**symbol_params)
+        self.role_embedder = RoleEmbedder(**role_params)
+        #features=None, segments=None, vowels=None, nrole=None, random_roles=False):
+        #if nrole is not None:
+        #    config.nrole = nrole
+        #self.symbol_embedder = SymbolEmbedder(features, segments, vowels)
+        #self.role_embedder = RoleEmbedder(nrole, random_roles)
         self.sym2id = { sym:i for i,sym in enumerate(config.syms) }
         self.id2sym = { i:sym for sym,i in self.sym2id.items() }
         print (self.sym2id)
