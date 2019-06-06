@@ -7,6 +7,7 @@
 from .environ import config
 from .symbol_embedder import SymbolEmbedder
 from .role_embedder import RoleEmbedder
+from .distance import euclid_squared
 import torch
 #import tpr
 #from tpr import *
@@ -53,7 +54,7 @@ class SeqEmbedder():
         return y, y_len
 
     # map string to tpr
-    # input must be space-separated
+    # (input must be space-separated)
     def string2tpr(self, x, delim=True):
         sym2id, F, R = self.sym2id, config.F, config.R
         y = string2delim(x) if delim else x
@@ -69,10 +70,11 @@ class SeqEmbedder():
             Y += torch.ger(F.data[:,j], R.data[:,i]) # outer product
         return Y
 
-    # mark up output with deletion and (un)pivot indicators
+    # map idvec to string, marking up output with deletion 
+    # and (un)pivot flags
     def idvec2string(self, x, copy=None, pivot=None, trim=True):
         id2sym = self.id2sym
-        segs = [id2sym[id] for id in x]
+        segs = [id2sym[idx] for idx in x]
         y = ' '.join(segs)
         if trim:
             y = re.sub(u'⋉.*', u'⋉', y)
@@ -82,6 +84,20 @@ class SeqEmbedder():
         if pivot is not None:
             segs = [x+u' •' if (i<len(pivot) and pivot[i]>0.5) else x for i,x in enumerate(segs)]
         y = ' '.join(segs)
+        return y
+    
+    # map tpr to string by comparing successive unbound vectors 
+    # to pure filler vectors with squared euclidean distance
+    def tpr2string(self, X, trim=True):
+        segs = []
+        for j in range(config.nrole):
+            y = X @ config.U[:,j]   # unbind
+            y_dist = euclid_squared(y, config.F)
+            y_idx = torch.argmin(y_dist).item()
+            segs.append(self.id2sym[y_idx])
+        y = ' '.join(segs)
+        if trim:
+            y = re.sub(u'⋉.*', u'⋉', y)
         return y
 
 # xxx make the following class-level utility functions

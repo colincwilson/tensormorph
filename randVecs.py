@@ -4,7 +4,7 @@
 import numpy as np
 
 
-def randVecs(n=None, dim=None, sim=None, sphere=False, nonnegative=False, scale=1.0):
+def randvecs(n=None, dim=None, sim=None, sphere=False, nonnegative=False, scale=1.0):
     """Creates random vectors using one of the methods below.
     Args:
         n (int): Number of random vectors to create.
@@ -17,14 +17,14 @@ def randVecs(n=None, dim=None, sim=None, sphere=False, nonnegative=False, scale=
     if dim is None:
         dim = n
     if sim is not None:
-        M = randVecsSim(n, dim, sim)
+        M = randvecs_sim(n, dim, sim)
     elif sphere is not None:
-        M = randVecsSphere(n, dim, nonnegative)
+        M = randvecs_sphere(n, dim, nonnegative)
     M /= float(scale)
     return M
 
 
-def randVecsSim(n, dim, sim, lb=-1.0, ub=1.0, scale=False):
+def randvecs_sim(n, dim, sim, lb=-1.0, ub=1.0, scale=False):
     """Create random vectors (columns) with specified similarity values.
     Args:
         n (int): Number of random vectors to create.
@@ -35,11 +35,11 @@ def randVecsSim(n, dim, sim, lb=-1.0, ub=1.0, scale=False):
         dim x n matrix with random vectors in rows.
     """
     dpMatrix = sim * np.ones((n,n)) + (1.0-sim) * np.identity(n)
-    M = randVecsSim2(n, dim, dpMatrix, lb, ub, scale)
+    M = randvecs_sim2(n, dim, dpMatrix, lb, ub, scale)
     return M
 
 
-def randVecsSim2(n, dim, dpMatrix, lb=-1.0, ub=1.0, scale=True):
+def randvecs_sim2(n, dim, dpMatrix, lb=-1.0, ub=1.0, scale=True):
     M = np.matrix(np.random.rand(dim, n)) # xxx respect bounds at initialization
     step0 = 0.1
     tol = 1e-6
@@ -56,11 +56,11 @@ def randVecsSim2(n, dim, dpMatrix, lb=-1.0, ub=1.0, scale=True):
             if scale: # scale values by number of rand vecs
                 return 1.0/float(N) * M
             return M
-    print('randVecsSim2: Failed to find solution to tolerance in specified iterations')
+    print('randvecs_sim2: Failed to find solution to tolerance in specified iterations')
     return M
 
 
-def randVecsSphere(N, dim, nonnegative=False):
+def randvecs_sphere(N, dim, nonnegative=False):
     """
     Generate n unit-length vectors on surface of sphere S^dim, 
     optionally requiring all elements to be non-negative, 
@@ -78,23 +78,23 @@ def randVecsSphere(N, dim, nonnegative=False):
 
 
 def test():
-    print ('randVecsSim')
+    print ('randvecs_sim')
     n = 5
-    M = randVecs(**{'n':n, 'dim':n, 'sim':np.identity(n)})
+    M = randvecs(**{'n':n, 'dim':n, 'sim':np.identity(n)})
     print(M)
     sim = np.round(np.dot(M.T, M), 5)
     print(sim)
     Minv = np.linalg.inv(M)
     print (Minv)
 
-    print ('randVecsSphere -- general')
-    M = randVecs(**{'n':n, 'dim':n, 'sphere':True})
-    #M = randVecs(n, n, sphere=True)
+    print ('randvecs_sphere -- general')
+    M = randvecs(**{'n':n, 'dim':n, 'sphere':True})
+    #M = rand_vecs(n, n, sphere=True)
     print (M)
 
-    print ('randVecsSphere -- nonnegative')
-    #M = randVecs(n, n, sphere=True, nonnegative=True)
-    M = randVecs(**{'n':n, 'dim':n, 'sphere':True})
+    print ('randvecs_sphere -- nonnegative')
+    #M = rand_vecs(n, n, sphere=True, nonnegative=True)
+    M = randvecs(**{'n':n, 'dim':n, 'sphere':True})
     print (M)
 
 

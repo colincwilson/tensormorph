@@ -2,6 +2,20 @@
 # -*- coding: utf-8 -*-
 
 from .tpr import *
+import sys
+
+# Squared Euclidean distance between vector y and each column of X
+def euclid_squared(y, X):
+    # ||y||^2
+    y_norm = (y**2.0).sum()
+
+   # ||x||^2 for each column in X
+    X_norm = (X**2.0).sum(0)
+    
+    dist = X_norm + y_norm - 2.0 * y @ X
+    #print ((y @ X).shape, dist.shape)
+    return dist
+
 
 # Squared Euclidean distance between each column of X and all columns of Y
 # see: https://discuss.pytorch.org/t/efficient-distance-matrix-computation/9065

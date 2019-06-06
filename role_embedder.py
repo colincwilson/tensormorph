@@ -2,25 +2,25 @@
 # -*- coding: utf-8 -*-
 
 from .environ import config
-from .randVecs import randVecs
+from .randvecs import randvecs
 import torch
 import numpy as np
 import re, sys
 
 class RoleEmbedder():
-    def __init__(self, nrole, randVecs_kwargs=None):
+    def __init__(self, nrole, randvec_params=None):
         """
         Create (currently only LR->) role vectors (drole x nrole) and 
         corresponding unbinding vectors (also drole x nrole), where for 
         exact TPR unbinding U = inv(R).
         ??? note: use transpose of role matrix to facilitate (soft) indexation of columns
         """
-        if randVecs_kwargs is None:
+        if randvec_params is None:
             R = np.eye(nrole)
         else:
-            randVecs_kwargs['n'] = nrole
-            randVecs_kwargs['dim'] = nrole
-            R = randVecs(**randVecs_kwargs)
+            randvec_params['n'] = nrole
+            randvec_params['dim'] = nrole
+            R = randvecs(**randvec_params)
         R = torch.FloatTensor(R)
         R.requires_grad = False
 
@@ -44,6 +44,7 @@ class RoleEmbedder():
         #        print(i, '->', p0.data.numpy()[:,0])
         #    sys.exit(0)
 
-        config.drole    = nrole
-        config.R        = R
-        config.U        = U
+        config.nrole = R.shape[1]
+        config.drole = R.shape[0]
+        config.R = R
+        config.U = U

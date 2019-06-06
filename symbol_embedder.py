@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .environ import config
-from .randVecs import randVecs
+from .randvecs import randvecs
 import torch
 import pandas as pd
 import re, sys
@@ -22,10 +22,10 @@ class SymbolEmbedder():
         feature_matrix: pandas DataFrame or filename
         segments (list): ordinary symbols
         vowels (list): ordinary symbols that are vowels
-        randVecs_arg (list): arguments passed to randVecs
+        randvec_params (list): arguments passed to randvecs
     """
     def __init__(self, feature_matrix=None, segments=None, 
-                        vowels=None, randVecs_kwargs=None):
+                        vowels=None, randvec_params=None):
         if feature_matrix is not None:
             if isinstance(feature_matrix, str):
                 feature_matrix = pd.read_csv(feature_matrix)
@@ -33,7 +33,7 @@ class SymbolEmbedder():
                 self.parse_feature_matrix(feature_matrix)
         else:
             (syms, ftrs, nfill, dfill, F) =\
-                self.make_embedding(segments, vowels, randVecs_kwargs)
+                self.make_embedding(segments, vowels, randvec_params)
         config.syms     = syms
         config.ftrs     = ftrs
         config.nfill    = nfill
@@ -80,7 +80,7 @@ class SymbolEmbedder():
         return (syms, ftrs, nfill, dfill, F)
 
 
-    def make_embedding(self, segments=None, vowels=None, randVecs_kwargs=None):
+    def make_embedding(self, segments=None, vowels=None, randvec_params=None):
         """
         Construct symbol embedding from list of segments, etc.
         """
@@ -105,18 +105,19 @@ class SymbolEmbedder():
 
         # C and V features
         if vowels is not None:
-            for j,x in enumerate(syms):
+            for x in segments:
+                j = syms.index(x)
                 F.data[2,j] = 1.0 if (x not in vowels) else 0.0
                 F.data[3,j] = 1.0 if (x in vowels) else 0.0
 
         # Random or one-hot embeddings of ordinary symbols
-        if randVecs_kwargs is None:
+        if randvec_params is None:
             F1 = torch.eye(nfill-3)
         else:
-            randVecs_kwargs['n'] = nfill-3
-            randVecs_kwargs['dim'] = nfill-3
+            randvec_params['n'] = nfill-3
+            randvec_params['dim'] = nfill-3
             F1 = torch.FloatTensor(
-                randVecs(**randVecs_kwargs)
+                randvecs(**randvec_params)
             )
 
         i = 2 if vowels is None else 4
