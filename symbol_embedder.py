@@ -11,13 +11,8 @@ import re, sys
 
 class SymbolEmbedder():
     """
-    Create segment embeddings from a preloaded feature matrix or feature file, 
+    Create segment embeddings from a feature matrix or feature file, 
     otherwise create one-hot or random embeddings from a list of segments.
-    Adds a 'symbol existence (sym)' feature, features to identify initial and 
-    final boundary symbols, and either detects or can create privative features 
-    specifying consonants (C) and vowels (V); the existence and delimiter features 
-    and special symbols (epsilon, delimiters) are purely internal should not be 
-    included in input feature matrices or files.
     Args (all optional):
         feature_matrix: pandas DataFrame or filename
         segments (list): ordinary symbols
