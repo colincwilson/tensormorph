@@ -7,11 +7,12 @@ import torch
 import numpy as np
 import re, sys
 
+
 class RoleEmbedder():
     def __init__(self, nrole, randvec_params=None):
         """
-        Create (currently only LR->) role vectors (drole x nrole) and 
-        corresponding unbinding vectors (also drole x nrole), where for 
+        Create (currently only LR->) role vector matrix (drole x nrole) and 
+        corresponding unbinding vector matrix (also drole x nrole), where for 
         exact TPR unbinding U = inv(R).
         ??? note: use transpose of role matrix to facilitate (soft) indexation of columns
         """
@@ -21,11 +22,8 @@ class RoleEmbedder():
             randvec_params['n'] = nrole
             randvec_params['dim'] = nrole
             R = randvecs(**randvec_params)
-        R = torch.FloatTensor(R)
-        R.requires_grad = False
-
-        U = torch.FloatTensor(np.linalg.inv(R)).t()
-        U.requires_grad = False
+        R = torch.tensor(R, requires_grad=False, dtype=torch.float)
+        U = torch.tensor(np.linalg.inv(R), requires_grad=False).t()
 
         # successor matrix for localist roles (as in Vindiola PhD)
         # note: torodial boundary conditions
@@ -44,7 +42,7 @@ class RoleEmbedder():
         #        print(i, '->', p0.data.numpy()[:,0])
         #    sys.exit(0)
 
-        config.nrole = R.shape[1]
-        config.drole = R.shape[0]
-        config.R = R
-        config.U = U
+        self.nrole = R.shape[1]
+        self.drole = R.shape[0]
+        self.R = R
+        self.U = U

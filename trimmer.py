@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from .environ import config
 from .tpr import *
-from .radial_basis imoprt GaussianPool
+from .radial_basis import GaussianPool
 from .matcher import Matcher3
 
 #import matplotlib

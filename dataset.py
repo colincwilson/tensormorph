@@ -36,6 +36,7 @@ class DataSet():
         self.test           = None
         self.train_embed    = None
         self.test_embed     = None
+        self.max_len        = 0
 
         segments = set() if vowels is None else set(vowels)
         for form in dat['stem']:
@@ -45,14 +46,18 @@ class DataSet():
         segments = [x for x in segments]
         segments.sort()
         self.segments = segments
+        self.max_len = np.max(
+            [len(x.split(' ')) for x in dat['stem']] +
+            [len(x.split(' ')) for x in dat['output']]
+            )
 
 
-    # get subset defined by morphological tag, 
-    # stem regex, and output regex
     def subset(self, morph=None, stem_regex=None, output_regex=None):
+        # Extract subset defined by morphological tag, 
+        # stem regex, or output regex
         dat1    = self.dat
         if morph is not None:
-            dat1    = dat1[dat1['morph'] == morph]
+            dat1 = dat1[dat1['morph'] == morph]
         #print (dat1.head())
         if stem_regex is not None:
             dat1 = dat1[dat1.stem.str.match(stem_regex)]
@@ -63,13 +68,24 @@ class DataSet():
         return DataSet(dat1, vowels=self.vowels)
 
 
-    # split into train and test subsets
+    def split_and_embed(self, test_size=0.25):
+        # Prepare for training
+        self.split(test_size)
+        self.embed()
+
+
     def split(self, test_size=0.25):
+        if test_size == 0:
+            self.train = self.dat
+            self.test = None
+            return
+        
+       # Split into train and test subsets
         dat = self.dat.copy()
         held_in_stems = self.held_in_stems
         held_out_stems = self.held_out_stems
 
-        # remove held_in and held_out prior to random split
+        # Remove held_in and held_out prior to random split
         if held_in_stems is not None:
             held_in = dat[(dat.stem.isin(held_in_stems))]
             dat      = dat[~(dat.stem.isin(held_in_stems))]
@@ -81,6 +97,7 @@ class DataSet():
 
         train, test = train_test_split(dat, test_size=test_size)
 
+        # Combine held_in and held_out with splits
         if held_in_stems is not None:
             train = pd.concat([held_in, train])
             train.reset_index()
@@ -90,33 +107,41 @@ class DataSet():
 
         print(train.head())
         print(test.head())
-        self.train, self.test = train, test
-        return None
+        self.train = train
+        self.test = test
 
 
-     # embed training and testing examples
     def embed(self):
+        # Embed training and testing examples
         self.train_embed = [self.embed1(ex)\
             for i,ex in self.train.iterrows()]
-        self.test_embed  = [self.embed1(ex)\
-            for i,ex in self.test.iterrows()]
-        return None
+        if self.test is not None:
+            self.test_embed  = [self.embed1(ex)\
+                for i,ex in self.test.iterrows()]
+        else:
+            self.test_embed = None
 
 
-   # embed one example
     def embed1(self, ex):
+       # Embed a single example
         stem, morph, output = ex['stem'], ex['morph'], ex['output']
         stem    = string2delim(stem)
         output  = string2delim(output)
 
         seq_embedder    = config.seq_embedder
         morph_embedder  = config.morph_embedder
-        try:    Stem = seq_embedder.string2tpr(stem, False)
-        except: print ('error embedding stem', stem)
-        try:    Morph = morph_embedder.embed(morph)
-        except: print ('error embedding morph', morph)
-        try:    Output, output_len = seq_embedder.string2idvec(output, False)
-        except: print ('error embedding output', output)
+        try:
+            Stem = seq_embedder.string2tpr(stem, False)
+        except:
+            print ('error embedding stem', stem)
+        try:
+            Morph = morph_embedder.embed(morph)
+        except: 
+            print ('error embedding morph', morph)
+        try:
+            Output, output_len = seq_embedder.string2idvec(output, False)
+        except:
+            print ('error embedding output', output)
 
         Stem    = Stem.unsqueeze(0)
         Morph   = Morph.unsqueeze(0)
@@ -124,9 +149,9 @@ class DataSet():
         return DataPoint(stem, morph, output, Stem, Morph, Output, output_len)
 
 
-    # get a random batch of training examples, or all training examples 
-    # (unrandomized), or all testing examples (unrandomized)
     def get_batch(self, type='train_rand', nbatch=20, start_index=0):
+        # Get a random batch of training examples, or all training examples 
+        # (unrandomized), or all testing examples (unrandomized)
         if type=='train_rand':
             train_embed = self.train_embed
             n           = len(train_embed)
@@ -151,9 +176,9 @@ class DataSet():
             output_lens, max_len)
 
 
-# write batch after predicting outputs
-# xxx relocate? xxx use string2undelim?
 def write_batch(batch, fname):
+    # Write batch after predicting outputs
+    # xxx relocate? xxx use string2undelim?
     batch_dump = pd.DataFrame({
         'stem':     [stem for stem in batch.stems],
         'output':   [output for output in batch.outputs],

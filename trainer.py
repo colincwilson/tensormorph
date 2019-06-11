@@ -3,22 +3,22 @@
 
 from .environ import config
 from .tpr import *
-from .data import DataBatch
+from .dataset import DataBatch
 #from model import Model
-import csv
+import csv  # todo: replace with pandas
 
 class Trainer():
     def __init__(self, model):
         self.model  = model
 
-        optimizer = optim.Adagrad # optim.RMSprop
+        optimizer = optim.Adagrad # optim.RMSprop # optim.Adadelta
         self.model_optim =\
             optimizer(model.parameters(), config.learn_rate, config.dc)
         self.decoder_optim =\
             optimizer(config.decoder.parameters(), config.learn_rate, config.dc)
         self.criterion =\
-            nn.CrossEntropyLoss(ignore_index=0, reduction='none')\
-            if config.loss_func=='loglik' else nn.MSELoss(reduction='none')
+            nn.CrossEntropyLoss(ignore_index=0, reduction='sum')\
+            if config.loss_func=='loglik' else nn.MSELoss(reduction='sum')
         #self.regularizer = nn.MSELoss(size_average=False)
         self.regularizer = nn.L1Loss(size_average=False)
 

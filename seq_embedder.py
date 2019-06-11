@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # todo
-# - auto-detect vowels if vowel set not provided
-# - allow segment embeddings to be trained (except for delimiter and existence features)
+# - allow segment embeddings to be refined in training (?except for sym, begin, end features)
 
 from .environ import config
 from .symbol_embedder import SymbolEmbedder
@@ -13,49 +12,48 @@ import torch
 #from tpr import *
 import re, sys
 
+
 class SeqEmbedder():
     def __init__(self, symbol_params, role_params):
         self.symbol_embedder = SymbolEmbedder(**symbol_params)
         self.role_embedder = RoleEmbedder(**role_params)
-        #features=None, segments=None, vowels=None, nrole=None, random_roles=False):
-        #if nrole is not None:
-        #    config.nrole = nrole
-        #self.symbol_embedder = SymbolEmbedder(features, segments, vowels)
-        #self.role_embedder = RoleEmbedder(nrole, random_roles)
-        self.sym2id = { sym:i for i,sym in enumerate(config.syms) }
+        self.sym2id = { sym:i for i,sym in enumerate(self.symbol_embedder.syms) }
         self.id2sym = { i:sym for sym,i in self.sym2id.items() }
         print (self.sym2id)
         print (self.id2sym)
 
-    # map symbol to filler vector
     def sym2vec(self, x):
+        # Map symbol to filler vector
         F = config.F
         sym2id = self.sym2id
         return F.data[:, sym2id[x]]
     
-    # map string to matrix of filler vectors
-    # (input must be space-separated)
     def string2vec(self, x, delim=True):
+        # Map space-separated string to matrix of filler vectors
         F = config.F
         idx, lens = self.string2idvec(x, delim)
         return F[:,idx], lens
 
-    # map string to vector of indices (torch.LongTensor), 
-    # possibly with zero-padding at end; also return string length
-    # (input must be space-separated)
     def string2idvec(self, x, delim=True, pad=False):
+        # Map space-separated string to vector of indices (torch.LongTensor), 
+        # possibly with zero-padding at end; also return string length
         sym2id  = self.sym2id
         y = string2delim(x) if delim else x
-        y = [sym2id[yi] for yi in y.split(u' ')]
+        y = y.split(u' ')
+        y_idx = [sym2id[yi] for yi in y]
+        print ([x for x in zip(y, y_idx)])
+        if any(y_idx is None):
+            print ('string2idvec error:')
+            print (zip(y, y_idx))
+        y = y_idx
         y_len = torch.LongTensor([len(y),])
         if pad:
             y = y + [0,]*(config.nrole - len(y))
         y = torch.LongTensor(y)
         return y, y_len
 
-    # map string to tpr
-    # (input must be space-separated)
     def string2tpr(self, x, delim=True):
+        # Map space-separated string to tpr
         sym2id, F, R = self.sym2id, config.F, config.R
         y = string2delim(x) if delim else x
         y = y.split(' ')
@@ -66,13 +64,18 @@ class SeqEmbedder():
         Y = torch.zeros(config.dfill, config.drole)
         for i in range(n):
             try: j = sym2id[y[i]]
-            except: print ('string2tpr error: no id for segment', y[i]) 
-            Y += torch.ger(F.data[:,j], R.data[:,i]) # outer product
+            except: print ('string2tpr error: no id for segment', y[i])
+            #print (Y.shape, Y.dtype)
+            #print (F.shape)
+            #print (F.data[:,j])
+            #print (R.data[:,i])
+            #print ( torch.ger(F[:,j], R[:,i]).shape )
+            Y += torch.ger(F[:,j], R[:,i]) # outer product
         return Y
 
-    # map idvec to string, marking up output with deletion 
-    # and (un)pivot flags
     def idvec2string(self, x, copy=None, pivot=None, trim=True):
+        # Map idvec to string, marking up output with deletion 
+        # and (un)pivot flags
         id2sym = self.id2sym
         segs = [id2sym[idx] for idx in x]
         y = ' '.join(segs)
@@ -86,9 +89,9 @@ class SeqEmbedder():
         y = ' '.join(segs)
         return y
     
-    # map tpr to string by comparing successive unbound vectors 
-    # to pure filler vectors with squared euclidean distance
     def tpr2string(self, X, trim=True):
+        # Map tpr to string by comparing successive unbound vectors 
+        # to pure filler vectors with squared euclidean distance
         segs = []
         for j in range(config.nrole):
             y = X @ config.U[:,j]   # unbind
@@ -100,20 +103,21 @@ class SeqEmbedder():
             y = re.sub(u'⋉.*', u'⋉', y)
         return y
 
-# xxx make the following class-level utility functions
-# separate elements of string with spaces
+
+# todo: make the following class-level utility functions
 def string2sep(x):
+    # Separate characters of string with spaces
     y = ' '.join([xi for xi in x])
     return y
 
-# add word delimiters; input must be space-separated
 def string2delim(x):
+    # Add word delimiters; input must be space-separated
     y = [config.stem_begin,] + [xi for xi in x.split(' ')] + [config.stem_end,]
     y = ' '.join(y)
     return y
 
-# remove word delimiters; input can be space-separated
 def string2undelim(x):
+    # Remove word delimiters; input can be space-separated
     y = re.sub('^'+config.stem_begin+'[ ]*', '', x)
     y = re.sub('[ ]*'+config.stem_end+'$', '', y)
     return y

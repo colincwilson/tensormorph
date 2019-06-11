@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .environ import config
-import .tpr import *
+from .tpr import *
 from .radial_basis import GaussianPool
 from .distance import pairwise_distance
 
