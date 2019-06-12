@@ -17,8 +17,8 @@ class Trainer():
         self.decoder_optim =\
             optimizer(config.decoder.parameters(), config.learn_rate, config.dc)
         self.criterion =\
-            nn.CrossEntropyLoss(ignore_index=0, reduction='sum')\
-            if config.loss_func=='loglik' else nn.MSELoss(reduction='sum')
+            nn.CrossEntropyLoss(ignore_index=0, reduction='none')\
+            if config.loss_func=='loglik' else nn.MSELoss(reduction='none')
         #self.regularizer = nn.MSELoss(size_average=False)
         self.regularizer = nn.L1Loss(size_average=False)
 

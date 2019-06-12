@@ -139,7 +139,7 @@ class DataSet():
         except: 
             print ('error embedding morph', morph)
         try:
-            Output, output_len = seq_embedder.string2idvec(output, False)
+            Output, output_len = seq_embedder.string2idvec(output, delim=False, pad=True) # xxx
         except:
             print ('error embedding output', output)
 
@@ -155,6 +155,7 @@ class DataSet():
         if type=='train_rand':
             train_embed = self.train_embed
             n           = len(train_embed)
+            nbatch      = nbatch if nbatch<n else n
             indx        = np.random.choice(n-start_index, nbatch, replace=False)
             batch       = [train_embed[i] for i in indx]
         elif type=='train_all':

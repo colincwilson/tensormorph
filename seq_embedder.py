@@ -67,7 +67,7 @@ class SeqEmbedder():
         segs = [self.id2sym[idx] for idx in x]
         y = ' '.join(segs)
         if trim:
-            y = re.sub('⋉.*', '⋉', y)
+            y = re.sub('(?<='+ config.stem_end +').*', '', y)
         segs = y.split(' ')
         if copy is not None:
             segs = ['⟨'+x+'⟩' if (i<len(copy) and copy[i]<0.5) else x for i,x in enumerate(segs)]
@@ -87,7 +87,7 @@ class SeqEmbedder():
             segs.append(self.id2sym[y_idx])
         y = ' '.join(segs)
         if trim:
-            y = re.sub('⋉.*', '⋉', y)
+            y = re.sub('(?<='+ config.stem_end +').*', '', y)
         return y
 
 
@@ -105,6 +105,6 @@ def string2delim(x):
 
 def string2undelim(x):
     # Remove word delimiters; input can be space-separated
-    y = re.sub('^'+config.stem_begin+'[ ]*', '', x)
-    y = re.sub('[ ]*'+config.stem_end+'$', '', y)
+    y = re.sub('^'+ config.stem_begin +'[ ]*', '', x)
+    y = re.sub('[ ]*'+ config.stem_end +'$', '', y)
     return y
