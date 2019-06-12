@@ -25,8 +25,7 @@ class SeqEmbedder():
     def sym2vec(self, x):
         # Map symbol to filler vector
         F = config.F
-        sym2id = self.sym2id
-        return F.data[:, sym2id[x]]
+        return F.data[:, self.sym2id[x]]
     
     def string2vec(self, x, delim=True):
         # Map space-separated string to matrix of filler vectors
@@ -37,14 +36,13 @@ class SeqEmbedder():
     def string2idvec(self, x, delim=True, pad=False):
         # Map space-separated string to vector of indices (torch.LongTensor), 
         # possibly with zero-padding at end; also return string length
-        sym2id  = self.sym2id
         y = string2delim(x) if delim else x
-        y = y.split(u' ')
-        y_idx = [sym2id[yi] for yi in y]
-        print ([x for x in zip(y, y_idx)])
-        if any(y_idx is None):
+        y_idx = [self.sym2id[yi] if yi in self.sym2id else None
+                    for yi in y.split(' ')]
+        if None in y_idx:
             print ('string2idvec error:')
-            print (zip(y, y_idx))
+            print ([sym_idx for sym_idx in zip(y.split(' '), y_idx)])
+            print (self.sym2id)
         y = y_idx
         y_len = torch.LongTensor([len(y),])
         if pad:
@@ -54,38 +52,27 @@ class SeqEmbedder():
 
     def string2tpr(self, x, delim=True):
         # Map space-separated string to tpr
-        sym2id, F, R = self.sym2id, config.F, config.R
-        y = string2delim(x) if delim else x
-        y = y.split(' ')
-        n = len(y)
-        if n > config.nrole:
-            print('string2tpr error: length of string (={}) longer than nrole (={}) for input: {}'.format(n, config.nrole, x))
+        y, y_len = self.string2idvec(x, delim)
+        if y_len > config.nrole:
+            print('string2tpr error: length of string (={}) longer than nrole (={}) for input: {}'.format(y_len, config.nrole, x))
             return None
         Y = torch.zeros(config.dfill, config.drole)
-        for i in range(n):
-            try: j = sym2id[y[i]]
-            except: print ('string2tpr error: no id for segment', y[i])
-            #print (Y.shape, Y.dtype)
-            #print (F.shape)
-            #print (F.data[:,j])
-            #print (R.data[:,i])
-            #print ( torch.ger(F[:,j], R[:,i]).shape )
-            Y += torch.ger(F[:,j], R[:,i]) # outer product
+        for i in range(y_len):
+            Y += torch.ger(config.F[:,y[i]], config.R[:,i]) # outer product
         return Y
 
     def idvec2string(self, x, copy=None, pivot=None, trim=True):
         # Map idvec to string, marking up output with deletion 
         # and (un)pivot flags
-        id2sym = self.id2sym
-        segs = [id2sym[idx] for idx in x]
+        segs = [self.id2sym[idx] for idx in x]
         y = ' '.join(segs)
         if trim:
-            y = re.sub(u'⋉.*', u'⋉', y)
+            y = re.sub('⋉.*', '⋉', y)
         segs = y.split(' ')
         if copy is not None:
-            segs = [u'⟨'+x+u'⟩' if (i<len(copy) and copy[i]<0.5) else x for i,x in enumerate(segs)]
+            segs = ['⟨'+x+'⟩' if (i<len(copy) and copy[i]<0.5) else x for i,x in enumerate(segs)]
         if pivot is not None:
-            segs = [x+u' •' if (i<len(pivot) and pivot[i]>0.5) else x for i,x in enumerate(segs)]
+            segs = [x+' •' if (i<len(pivot) and pivot[i]>0.5) else x for i,x in enumerate(segs)]
         y = ' '.join(segs)
         return y
     
@@ -100,7 +87,7 @@ class SeqEmbedder():
             segs.append(self.id2sym[y_idx])
         y = ' '.join(segs)
         if trim:
-            y = re.sub(u'⋉.*', u'⋉', y)
+            y = re.sub('⋉.*', '⋉', y)
         return y
 
 

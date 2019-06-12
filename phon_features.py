@@ -5,6 +5,7 @@ from .environ import config
 import pandas as pd
 import numpy as np
 from collections import namedtuple
+from unicodedata import normalize
 import re, string, sys
 
 
@@ -29,9 +30,13 @@ def import_features(feature_matrix=None, segments=None, standardize=True):
         ftr_matrix = feature_matrix
 
     # List all segments and features in the matrix, find syllabic feature
+    #ftr_matrix.iloc[:,0] = [normalize('NFC', x) for x in ftr_matrix.iloc[:,0]]
     segments_all = [x for x in ftr_matrix.iloc[:,0]]
     features_all = [x for x in ftr_matrix.columns[1:]]
     syll_ftr = [ftr for ftr in features_all if re.match('^(syl|syllabic)$', ftr)][0]
+
+    # Normalize unicode insanity
+    segments_all = [re.sub('\u0261', 'g', x) for x in segments_all] # script g -> g
 
     # Reduce feature matrix to given segments (if provided), pruning 
     # features other than vowel_ftr that have constant or redundant values
