@@ -41,9 +41,11 @@ def strings2idmat(xs, delim=True):
     ids = ids.unsqueeze(-1) # (max_len, batch, 1)
     return ids, lens
 
-# Wrapper for embedding consistent with OpenNMT-py
-# note: add 'non-epsilon' feature to break symmetry between nsym and embedding dimension
 class OneHotEmbeddings(Embeddings):
+    """
+    Wrapper for embedding consistent with OpenNMT-py
+    note: add 'non-epsilon' feature to break symmetry between nsym and embedding dimension
+    """
     def __init__(self, syms):
         super(Embeddings, self).__init__()
         self.F = torch.cat([

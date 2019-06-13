@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 # xxx todo: track cumulative attention to each role (position) within this class, 
 # taking into account deletion (~ zero-write) steps:
 # ex. for role i, a_i(t)*1 + a_i(t+1)*1 + a_i(t+2)*0 should have total a_i(t) + a_i(t+1)
@@ -13,7 +14,7 @@
 from .environ import config
 from .tpr import *
 
-# xxx make version for localist roles
+# todo: make version for localist roles
 class Writer(nn.Module):
     def __init__(self, node='writer'):
         super(Writer, self).__init__()
@@ -21,7 +22,7 @@ class Writer(nn.Module):
         self.node = node
 
 
-    # add a soft symbol/role binding to tpr Y
+    # Add a soft symbol/role binding to tpr Y
     #   a is soft index into morphs (M0, M1)
     #   b0, b1 are soft positions within M0, M1
     #   c is soft position within output Y
@@ -51,10 +52,12 @@ class Writer(nn.Module):
         return Y
 
 
-    # normalize (divide) the gradient filler in each role of the output Y 
-    # by the total attention to that role accumulated over writing steps
-    # xxx assumes localist roles
     def normalize(self):
+        """
+        Normalize (divide) the gradient filler in each role of the output Y 
+        by the total attention to that role accumulated over writing steps.
+        xxx assumes localist roles
+        """
         Y, attn_total = self.Y, self.attn_total
         #print Y.shape, attn_total.shape
         eps = 1.0e-10
@@ -63,12 +66,16 @@ class Writer(nn.Module):
         return Z
 
 
-    # get result of writing
     def output(self):
+        """
+        Final result of writing
+        """
         return self.Y
 
 
-    # initialize output and cumulative role attention
     def init(self, nbatch):
+        """
+        Initialize output and cumulative role attention.
+        """
         self.Y = torch.zeros(nbatch, config.dfill, config.drole, requires_grad=True)
         self.attn_total = torch.zeros(nbatch, config.drole)

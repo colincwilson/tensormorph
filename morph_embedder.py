@@ -30,7 +30,7 @@ class MorphEmbedder():
 class UnimorphEmbedder(MorphEmbedder):
     def __init__(self, dat):
         print('collecting dimensions and labels from morphological tags ...')
-        # convert all morph tags to unimorph dimension=label lists
+        # Convert all morph tags to unimorph dimension=label lists
         dat['morph'] = [x.lower() for x in dat['morph']]
         tags = [tag2keyvalue(x) for x in dat['morph']]
         tags_unk = [x for x in tags if re.search('[?]',x)]
@@ -38,13 +38,13 @@ class UnimorphEmbedder(MorphEmbedder):
             print('tags with unknown dimensions or labels:', tags_unk)
         #print(unimorph_util.labels_without_dimensions)
 
-        # collect dimension=label types
+        # Collect dimension=label types
         dimlabs = [set(x.split(';')) for x in tags]
         dimlabs = reduce((lambda x,y: x | y), dimlabs, set([]))
         dimlabs = [x.split('=') for x in dimlabs]
         #print(dimlabs)
 
-        # collect labels within each dimension
+        # Collect labels within each dimension
         dims = list(set([x[0] for x in dimlabs])); dims.sort()
         dim2labels = {}
         for dim in dims:
@@ -55,7 +55,7 @@ class UnimorphEmbedder(MorphEmbedder):
         print('dimension => labels:', dim2labels)
         print('label => dimension:', label2dim)
 
-        # make embedding map for each dimension
+        # Make embedding map for each dimension
         dim2embed = {}
         dmorph = 0
         for dim in dims:
@@ -93,7 +93,7 @@ class UnimorphEmbedder(MorphEmbedder):
 
     def reduce_dimension(self, dat):
         embed = self.embed
-        # collect unique tags from data, embed each one,
+        # Collect unique tags from data, embed each one,
         # perform dimensionality reduction on the result
         tag_types = Counter([x for x in dat.morph])
         print(tag_types)

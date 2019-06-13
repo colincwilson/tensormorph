@@ -14,9 +14,11 @@ class GaussianPool(nn.Module):
         else:
             self.tau = Parameter(torch.zeros(1)) # .normal_(1.0, 0.1))
 
-    # map batch of soft positions to attention distributons over discrete positions
-    # => output is nbatch x drole
     def forward(self, posn):
+        """
+        Map batch of soft positions to attention distributons over discrete positions
+        => output is nbatch x drole
+        """
         mu, tau = self.mu, torch.exp(self.tau) + config.tau_min # apply relu6 to tau? #hardtanh(self.tau, 0.0, 10.0)
         attn = -tau*torch.pow(posn - mu, 2.0) # distance between posn and each rbf center
         attn = log_softmax(attn, 1) # normalize in log domain
@@ -29,9 +31,11 @@ class GaussianPool(nn.Module):
         return attn
 
 
-# smooth probability distribution over ordinal positions with
-# ~ Gaussian convolution [xxx can this be implemented directly?]
 class GaussianPool2D(nn.Module):
+    """
+    Smooth probability distribution over ordinal positions with
+    ~ Gaussian convolution [xxx can this be implemented directly?]
+    """
     def __init__(self, n, tau=None):
         super(GaussianPool2D, self).__init__()
         self.n   = n # number of ordinal positions
@@ -52,8 +56,10 @@ class GaussianPool2D(nn.Module):
         return beta
 
 
-# map soft position to attention distribution over discrete positions
 def posn2attn(posn, tau, n=None):
+    """
+    Map soft position to attention distribution over discrete positions
+    """
     mu   = torch.arange(0,n).type(torch.FloatTensor)
     attn = posn - mu
     attn = -tau*torch.pow(attn, 2.0)   # rbf scores

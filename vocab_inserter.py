@@ -5,8 +5,10 @@ from .environ import config
 from .tpr import *
 
 
-# morph look-up table implemented with linear map from morphosyn + stem scan
 class VocabInserter(nn.Module):
+    """
+    Morph look-up table implemented with linear map from morphosyn + stem scan
+    """
     def __init__(self, redup=False, root=True):
         super(VocabInserter, self).__init__()
         self.morph2affix =\
@@ -20,13 +22,13 @@ class VocabInserter(nn.Module):
 
     def forward(self, morpho):
         nbatch = morpho.shape[0]
-        # tpr of affix via binding matrix: affix tpr = F B_affix R^T
+        # Tpr of affix via binding matrix: affix tpr = F B_affix R^T
         #B_affix = self.morph2affix(morpho).view(nbatch, config.nfill, config.nrole)
         #B_affix = torch.exp(log_softmax(B_affix, dim=1)) # normalize within roles
         #affix = torch.bmm(torch.bmm(F, B_affix), Rt)
         # tpr of affix directly
         affix = self.morph2affix(morpho).view(nbatch, config.dfill, config.drole)
-        # restrict learned affix values to [0,1] or [-1,+1]
+        # Restrict learned affix values to [0,1] or [-1,+1]
         affix = sigmoid(affix) if config.privative_ftrs\
                 else tanh(affix)
         #affix.data[0,0] = 1.0 # force affix to begin at 0th position

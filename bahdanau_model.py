@@ -33,14 +33,14 @@ class BahdanauDecoder(nn.Module):
         tgt_len = tgt.shape[0]
         src_mask = sequence_mask(src_lengths, max_len=src_enc.size(0)).transpose(0,1)
 
-        # precompute all target-side embeddings
+        # Precompute all target-side embeddings
         tgt_embed = self.embedding(tgt.squeeze(-1))
-        # initialize decoder state
+        # Initialize decoder state
         s = torch.tanh(self.Ws(src_enc[0,:,:]))
         #dec_states += [s.clone().unsqueeze(0),]
-        # recurrence
+        # Recurrence
         for i in range(1,tgt_len):
-            # condition attention on current decoder state
+            # Condition attention on current decoder state
             s_ = s.unsqueeze(0).expand(src_enc.shape[0],
                                         s.shape[0],
                                         s.shape[1])
@@ -51,17 +51,17 @@ class BahdanauDecoder(nn.Module):
             #print (ai.shape, src_enc.shape); sys.exit(0)
             ci = torch.sum(ai.unsqueeze(-1) * src_enc, 0)
 
-            # compute decoder output (single layer, no drop-out)
+            # Compute decoder output (single layer, no drop-out)
             # note: use encoder state s_(i-1), before state update
             inpt = torch.cat([tgt_embed[i-1,:,:], s, ci], 1)
             ti = self.Wo(inpt)
 
-            # store decoder state and output, attention distributions
+            # Store decoder state and output, attention distributions
             dec_states += [s.clone().unsqueeze(0),]
             dec_outputs += [ti.clone().unsqueeze(0),]
             dec_attns += [ai.clone().transpose(0,1).unsqueeze(0),]
 
-            # update decoder state
+            # Update decoder state
             inpt = torch.cat([tgt_embed[i-1,:,:], s, ci], -1)
             zi = torch.sigmoid(self.Wz(inpt))   # update
             ri = torch.sigmoid(self.Wr(inpt))   # reset
@@ -85,11 +85,11 @@ class BahdanauGenerator(nn.Module):
         # alt: use Bilinear directly
     
     def forward(self, dec_outputs):
-        # bilinear map comparing dec_outputs and output embeddings
+        # Bilinear map comparing dec_outputs and output embeddings
         gen_pre_outputs = self.Wg(dec_outputs)
         gen_outputs = torch.matmul(gen_pre_outputs, self.embedding.weight.t())
         #print (gen_pre_outputs.shape, self.embedding.F.transpose(0,1).shape); sys.exit(0)
-        # convert to probability distribution over output symbols
+        # Convert to probability distribution over output symbols
         gen_outputs = torch.log_softmax(gen_outputs, dim = -1)
         return gen_outputs, gen_pre_outputs
 
@@ -116,12 +116,12 @@ class BahdanauModel(nn.Module):
             nhidden)
 
     def forward(self, src, tgt, src_lengths, bptt=False):
-        # encode source
+        # Encode source
         _, src_enc, _ = self.encoder(src)
-        # decode
+        # Decode
         dec_outputs, dec_states, dec_attns =\
             self.decoder(src_enc, tgt, src_lengths)
-        # generate from decoder outputs
+        # Generate from decoder outputs
         gen_outputs, gen_pre_outputs =\
             self.generator(dec_outputs)
         return gen_outputs, gen_pre_outputs

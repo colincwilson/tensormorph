@@ -28,8 +28,10 @@ class Affixer(nn.Module):
             self.affix_inserter = VocabInserter()
 
 
-    # map tpr of stem to tpr of stem+affix
     def forward(self, stem, morph, max_len):
+        """
+        Map tpr of stem to tpr of stem+affix
+        """
         nbatch  = stem.shape[0]
         scan    = torch.zeros((nbatch,2)) # self.scanner(stem)
         morpho  = torch.cat([morph, scan], 1)

@@ -7,8 +7,10 @@ from .tpr import *
 from .scanner import BiScanner
 from .trimmer import BiTrimmer
 
-# stem modifier (after Steriade, 1988)
 class StemModifier(nn.Module):
+    """
+    Stem modifier (after Steriade, 1988)
+    """
     def __init__(self):
         super(StemModifier, self).__init__()
         self.deleter = BiScanner(morpho_size=(config.dmorph+2), nfeature=5, npattern=1, node='root-stem_modifier-deleter')

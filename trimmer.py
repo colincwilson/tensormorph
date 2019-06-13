@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 from .environ import config
 from .tpr import *
 from .radial_basis import GaussianPool
@@ -8,9 +9,11 @@ from .matcher import Matcher3
 #import matplotlib
 #import matplotlib.pyplot as plt
 
-# combine results of trimming LR-> and <-RL,
-# output is a copy vector (nbatch x n)
 class BiTrimmer(nn.Module):
+    """
+    Combine results of trimming LR-> and <-RL,
+    output is a copy vector (nbatch x n).
+    """
     def __init__(self, morpho_size, nfeature=0, bias=0.0):
         super(BiTrimmer, self).__init__()
         self.nfeature = nfeature
@@ -33,9 +36,11 @@ class BiTrimmer(nn.Module):
         print('BiTrimmer.init() does nothing')
 
 
-# trim a contiguous part of a form by scanning LR-> or <-RL,
-# output is a copy vector (nbatch x n) -- assumes local role vectors
 class Trimmer(torch.nn.Module):
+    """
+    Trim a contiguous part of a form by scanning LR-> or <-RL,
+    output is a copy vector (nbatch x n) -- assumes local role vectors
+    """
     def __init__(self, morpho_size=1, nfeature=5, direction='LR->'):
         super(Trimmer, self).__init__()
         self.nfeature    = nfeature

@@ -6,10 +6,10 @@ from .tpr import *
 from .radial_basis import GaussianPool
 from .writer import Writer
 
-# encapsulates main hierarchical attention logic of reading / writing.
+# Encapsulates main hierarchical attention logic of reading / writing.
 # attention distributions are computed from gradient (scalar) indices 
 # that are updated over processing steps
-# hierarchical structure of attention:
+# Hierarchical structure of attention:
 # - morpheme (stem vs. affix)
 # - ordinal position within morpheme (0, 1, ..., nrole-1)
 class Combiner(nn.Module):
@@ -27,20 +27,20 @@ class Combiner(nn.Module):
         writer = self.writer
         writer.init(nbatch)
 
-        # initialize soft indices (all zeros)
+        # Initialize soft indices (all zeros)
         a  = torch.zeros(nbatch, 1, requires_grad=True) # morph (0.0=>stem, 1.0=>affix)
         b0 = torch.zeros(nbatch, 1, requires_grad=True) # position within stem
         b1 = torch.zeros(nbatch, 1, requires_grad=True) # position within affix
         c  = torch.zeros(nbatch, 1, requires_grad=True) # position within output
 
         for i in range(max_len):
-            # map soft indices to attention distributions
+            # Map soft indices to attention distributions
             alpha = morph_attender(a)
             beta0 = posn_attender(b0)
             beta1 = posn_attender(b1)
             omega = posn_attender(c)
 
-            # get copy, pivot, unpivot probabilities at current stem and affix positions
+            # Get copy, pivot, unpivot probabilities at current stem and affix positions
             theta   = alpha[:,0].unsqueeze(1)
             theta0  = dot_batch(pivot, beta0)
             theta1  = dot_batch(unpivot, beta1)
@@ -48,7 +48,7 @@ class Combiner(nn.Module):
             delta1  = dot_batch(copy_affix, beta1)
             #delta1  = dot_batch(affix.narrow(1,0,1).squeeze(1), beta1) # xxx provisional
 
-            # update tpr of output
+            # Update tpr of output
             writer(stem, affix, alpha, beta0, beta1, omega, delta0, delta1)
 
             if config.recorder is not None:
@@ -61,7 +61,7 @@ class Combiner(nn.Module):
                     'unpivot_prob':theta1
                     })
 
-            # update stem/affix selection and position within each morph
+            # Update stem/affix selection and position within each morph
             # - switch morph at (un)pivot points, else stay
             a  = a + theta * theta0 - (1.0 - theta) * theta1
             # - convex combos of advance within each morpheme and stay

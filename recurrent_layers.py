@@ -5,8 +5,10 @@
 import torch
 import torch.nn as nn
 
-# Single-layer, unidirectional GRU with no dropout
 class GRU1(nn.Module):
+    """
+    Single-layer, unidirectional GRU with no dropout
+    """
     def __init__(self, input_size, hidden_size, num_layers=1, bidirectional=False):
         super(GRU1, self).__init__()
         self.input_size = input_size
@@ -18,8 +20,10 @@ class GRU1(nn.Module):
         for W_hx in ['W_hr', 'W_hz', 'W_hn']:
             setattr(self, W_hx, nn.Linear(hidden_size, hidden_size))
     
-    # Arguments: seq [max_len x batch_size] and seq_len [batch_size] (optional)
     def forward(self, seq, seq_len=None):
+        """
+        Arguments: seq [max_len x batch_size] and seq_len [batch_size] (optional)
+        """
         max_len, batch_size, _ = seq.shape
         h_init = torch.zeros(batch_size, self.hidden_size, requires_grad=False)
         R, Z, N, H = [], [], [], []

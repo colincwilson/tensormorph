@@ -10,13 +10,13 @@ class Recorder:
     def __init__(self):
         self.record = {}
 
-    # record (key,value) pairs
     def set_values(self, prefix, keyvals):
+        # Record (key,value) pairs
         for x,y in keyvals.items():
             self.record[prefix+'-'+x] = y.clone()
 
-    # update record of (key,value) pairs
     def update_values(self, prefix, keyvals):
+        # Update record of (key,value) pairs
         for x,y in keyvals.items():
             x = prefix+'-'+x
             if not x in self.record:
@@ -30,15 +30,15 @@ class Recorder:
                 y = [yi.unsqueeze(1) for yi in y]
                 self.record[x] = torch.cat(y, dim=1)
         if save:
-            # save all recorded objects
+            # Save all recorded objects
             for x,y in self.record.items():
                 y = np.clip(y.data.numpy(), -1.0e5, 1.0e5)
                 np.save(config.save_dir+'/'+x +'.npy', y)
-            # write filler, role, unbinding matrices
+            # Write filler, role, unbinding matrices
             np.save(config.save_dir+'/filler_matrix.npy', config.F)
             np.save(config.save_dir+'/role_matrix.npy', config.R)
             np.save(config.save_dir+'/unbind_matrix.npy', config.U)
-            # write symbols
+            # Write symbols
             syms = np.array(config.syms)
             np.savetxt(config.save_dir+'/symbols.txt', syms, fmt='%s')
         return self.record

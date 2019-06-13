@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Provides batch binding and unbinding (i.e., query) operations on TPRs
-# Convention: batch corresponds to *first* index in all inputs and outputs
-# (see https://discuss.pytorch.org/t/how-to-repeat-a-vector-batch-wise)
-# todo: convert ops to einsum (but currently does in-place operations?)
+"""
+Provides batch binding and unbinding (i.e., query) operations on TPRs
+Convention: batch corresponds to *first* index in all inputs and outputs
+(see https://discuss.pytorch.org/t/how-to-repeat-a-vector-batch-wise)
+todo: convert ops to einsum (but currently does in-place operations?)
+"""
 
 import torch
 import torch.nn as nn
@@ -21,8 +23,10 @@ import numpy as np
 from numpy import linalg
 import sys
 
-# batch dot (inner) product
 def dot_batch(x, y):
+    """
+    Batch dot (inner) product.
+    """
     batch_size, dim = x.shape
     val = torch.bmm(x.view(batch_size, 1, dim),\
                     y.view(batch_size, dim, 1))
@@ -33,21 +37,25 @@ def dot_batch(x, y):
     #return val
 
 
-# Gaussian radial basis function
-# (note: does not include normalization constant)
-# xxx move elsewhere
 def rbf(x, mu, tau, log=False):
+    """
+    Gaussian radial basis function
+    (note: does not include normalization constant).
+    todo: relocate
+    """
     s = -tau * torch.pow(x - mu, 2.0)
     if log: return s
     s = torch.exp(s)
     return s
 
 
-# Botvinick-Watanabe (2007) scaled log normal function
-# note: positions begin at 0 (cf. 1 in the original paper),
-# therefore add 1 before taking logs ... wlog :)
-# xxx move elsewhere
 def scaledlognorm(x, mu, tau=torch.FloatTensor([1.0,]), log=False):
+    """
+    Botvinick-Watanabe (2007) scaled log normal function
+    note: positions begin at 0 (cf. 1 in the original paper),
+    therefore add 1 before taking logs ... wlog :)
+    todo: relocate
+    """
     s = torch.pow(torch.log(x + 1.0) - torch.log(mu + 1.0), 2.0)
     s = -tau * s    # equiv. to s / torch.pow(x,2.0)
     if log: return s
@@ -55,21 +63,25 @@ def scaledlognorm(x, mu, tau=torch.FloatTensor([1.0,]), log=False):
     return s
 
 
-# map discrete position to column of matrix by look-up
-# or soft position to column of matrix via attention
 def posn2vec(M, posn, tau=None):
+    """
+    Map discrete position to column of matrix by look-up
+    or soft position to column of matrix via attention.
+    """
     if tau is None:
         return M[:,posn]
     attn = posn2attn(posn, tau, M.shape[-1])
     return attn2vec(attn)
 
 
-# map discrete position to column of matrix by look-up
-# or soft position to column of matrix via attention
-# note: discrete position must be torch.LongTensor,
-#       soft position must be torch.FloatTensor
-# => output is nbatch x nrow(M)
 def posn2vec_batch(M, posn, tau=None):
+    """
+    Map discrete position to column of matrix by look-up
+    or soft position to column of matrix via attention
+    note: discrete position must be torch.LongTensor,
+    soft position must be torch.FloatTensor.
+    => output is nbatch x nrow(M)
+    """
     if tau is None:
         return M[:,posn].t()
     attn = posn2attn_batch(posn, tau, M.shape[-1])
@@ -81,28 +93,36 @@ def posn2vec_batch(M, posn, tau=None):
 # print(u.data)
 
 
-# map attention distribution to column of matrix
 def attn2vec(M, attn):
+    """
+    Map attention distribution to column of matrix.
+    """
     val = torch.mm(M, attn)
     return val
 
 
-# map attention distribution to column of matrix
 def attn2vec_batch(M, attn):
+    """
+    Map attention distribution to column of matrix.
+    """
     val = torch.mm(M, attn.t()).t()
     #val = torch.einsum('bj,ij->bi', [M, attn])
     return val
 
 
-# map soft position to soft role vector
 def posn2role(posn, tau=None):
+    """
+    Map soft position to soft role vector.
+    """
     R = config.R
     return posn2vec(R, posn, tau)
 
 
-# map soft position to soft role vector
-# => output is nbatch x drole
 def posn2role_batch(posn, tau=None):
+    """
+    Map soft position to soft role vector,
+    output is nbatch x drole.
+    """
     R = config.R
     return posn2vec_batch(R, posn, tau)
 
@@ -116,38 +136,48 @@ def attn2succ_batch(attn):
     return attn2vec_batch(S, attn)
 
 
-# map soft position to soft unbinding vector
 def posn2unbind(posn, tau=None):
+    """
+    Map soft position to soft unbinding vector.
+    """
     U = config.U
     return posn2vec(U, posn, tau)
 
 
-# map soft position to soft unbinding vector
-# => output is nbatch x drole
 def posn2unbind_batch(posn, tau=None):
+    """
+    Map soft position to soft unbinding vector,
+    output is nbatch x drole.
+    """
     U = config.U
     return posn2vec_batch(U, posn, tau)
 
 
-# map attention distribution to soft unbinding vector
 def attn2unbind_batch(attn):
+    """
+    Map attention distribution to soft unbinding vector.
+    """
     U = config.U
     return attn2vec_batch(U, attn)
 
 
-# unbind filler at hard or soft string position
 def posn2filler(T, posn, tau=None):
+    """
+    Unbind filler at hard or soft string position.
+    """
     u = posn2unbind(posn, tau)
     f = T.mm(u)
     return f
 
 
-# unbind filler at hard or soft string position
-# for each position i in batch posn
-#  - get unbinding vector ui by look-up or attention
-#  - unbind filler fi from tpr Ti with ui
-# => output is nbatch x nfill
 def posn2filler_batch(T, posn, tau=None):
+    """
+    Unbind filler at hard or soft string position
+    for each position i in batch posn
+    - get unbinding vector ui by look-up or attention
+    - unbind filler fi from tpr Ti with ui
+    output is nbatch x nfill.
+    """
     u = posn2unbind_batch(posn, tau)
     #print(T.shape, u.shape)
     f = T.bmm(u.unsqueeze(2))
@@ -164,49 +194,59 @@ def attn2filler_batch(T, attn):
     return f
 
 
-# contruct filler-role bindings
-# [https://discuss.pytorch.org/t/batch-outer-product/4025/2]
-# => output is nbatch x nfill x nrole
 def bind_batch(f, r):
+    """
+    Contruct filler-role bindings
+    [https://discuss.pytorch.org/t/batch-outer-product/4025/2]
+    output is nbatch x nfill x nrole.
+    """
     fr = torch.bmm(f.unsqueeze(2), r.unsqueeze(1))
     return fr
 
 
-# normalize by summing over second dimension
-# (NB. does not take absolute value of elements,
-# therefore not equivalent to torch.normalize(1,1))
-# xxx move elsewhere
 def normalize(X, dim=1):
+    """
+    Normalize by summing over second dimension
+    (NB. does not take absolute value of elements,
+    therefore not equivalent to torch.normalize(1,1)).
+    todo: relocate
+    """
     Y = X / torch.sum(X, dim, keepdim=True)
     return Y
 
 
-# normalize to length one
-# xxx move elsewhere
 def normalize_length(X, dim=1):
+    """
+    Normalize to length one.
+    todo: relocate
+    """
     Y = X / torch.mm(X.t(), X)
     return Y
 
 
-# bound columns of each batch within [-1,1]
-# xxx move elsewhere
 def bound_batch_old(X):
-        batch_size, m, n = X.shape
-        Y = torch.zeros_like(X)
-        ones = torch.ones((1, n))
-        for i in range(batch_size):
-            Xi = X[i,:,:]
-            maxi = torch.max(Xi, 0)[0].view(1, n)
-            mini = torch.min(Xi, 0)[0].view(1, n)
-            maxi = torch.cat((maxi, -mini, ones), 0)
-            maxi = torch.max(maxi, 0)[0].view(1, n)
-            Y[i,:,:] = Xi / maxi
-        return Y
+    """
+    Bound columns of each batch within [-1,1].
+    todo: relocate
+    """
+    batch_size, m, n = X.shape
+    Y = torch.zeros_like(X)
+    ones = torch.ones((1, n))
+    for i in range(batch_size):
+        Xi = X[i,:,:]
+        maxi = torch.max(Xi, 0)[0].view(1, n)
+        mini = torch.min(Xi, 0)[0].view(1, n)
+        maxi = torch.cat((maxi, -mini, ones), 0)
+        maxi = torch.max(maxi, 0)[0].view(1, n)
+        Y[i,:,:] = Xi / maxi
+    return Y
 
 
-# bound columns of each batch within [-1,1]
-# xxx move elsewhere
 def bound_batch(X):
+    """
+    Bound columns of each batch within [-1,1].
+    todo: relocate
+    """
     batch_size, m, n = X.shape
     ones = torch.ones((batch_size,1,n))
     maxi = torch.max(X, 1)[0].view(batch_size, 1, n)
@@ -219,9 +259,11 @@ def bound_batch(X):
     return Y
 
 
-# check that each value of vector is within bounds
-# xxx move elsewhere
 def check_bounds(x, min=0.0, max=1.0):
+    """
+    Check that each value of vector is within bounds.
+    todo: relocate
+    """
     if np.any(x<min) or np.any(x>max):
         return 0
     return 1

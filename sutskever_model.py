@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Encoder-Decoder (after Sutskever et al. 2014)
-# final state of encoder is initial state of decoder
 import torch
 import torch.nn as nn
 import onmt
@@ -11,6 +9,10 @@ from .recurrent_layers import GRU1
 from bahdanau_model import BahdanauGenerator
 
 class SutskeverModel(nn.Module):
+    """
+    Encoder-Decoder (after Sutskever et al. 2014);
+    final state of encoder is initial state of decoder
+    """
     def __init__(self, embedding, nhidden):
         super(SutskeverModel, self).__init__()
         self.nsym = embedding.nsym
@@ -44,15 +46,15 @@ class SutskeverModel(nn.Module):
             nhidden)
 
     def forward(self, src, tgt, src_lengths, bptt=False):
-        # encode source
+        # Encode source
         src_embed = self.embedding(src)
         enc_final = self.encoder(src_embed, src_lengths)
         if enc_final.shape[0]>1:
             enc_final = torch.cat(torch.split(0),-1).unsqueeze(0)
-        # decode
+        # Decode
         dec_outputs, _ =\
             self.decoder(torch.zeros(tgt.shape[0], tgt.shape[1], 0), enc_final)
-        # generate from decoder outputs
+        # Generate from decoder outputs
         gen_outputs, gen_pre_outputs =\
             self.generator(dec_outputs)
         gen_outputs, gen_pre_outputs =\

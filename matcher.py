@@ -7,11 +7,14 @@ from .radial_basis import GaussianPool
 from .distance import pairwise_distance
 
 # soft regex match over window of length 3
-# if npattern == 1, returns matches to a single soft regex in the form (nbatch, nrole)
-# else (npattern>1) returns
-# - all matches to a bank of soft regexes in the form (nbatch, nrole, npattern) if maxout==False
-# - the result of maxout (nbatch, nrole, npattern) -> (nbatch, nrole) if maxout==True
 class Matcher3(nn.Module):
+    """
+    Soft regex match over window of length 3
+    if npattern == 1, returns matches to a single soft regex in the form (nbatch, nrole)
+    else (npattern>1) returns
+    - all matches to a bank of soft regexes in the form (nbatch, nrole, npattern) if maxout==False
+    - the result of maxout (nbatch, nrole, npattern) -> (nbatch, nrole) if maxout==True
+    """
     def __init__(self, morpho_size, nfeature, npattern=1, maxout=False, node=''):
         super(Matcher3, self).__init__()
         self.matcher_prev   = MatcherGCM(morpho_size, nfeature, npattern, node=node+'-prev')
@@ -63,8 +66,10 @@ class Matcher3(nn.Module):
         return match
 
 
-# soft regex match of a single filler
 class Matcher(nn.Module):
+    """
+    Soft regex match of a single filler
+    """
     def __init__(self, morpho_size, nfeature, node=''):
         super(Matcher, self).__init__()
         self.morph2w    = nn.Linear(morpho_size, nfeature, bias=True)
@@ -87,12 +92,13 @@ class Matcher(nn.Module):
         return log_match
 
 
-# attention-weighted euclidean distance matcher
-# see GCM (Nosofsky 1986), ALCOVE (Kruschke 1991), etc. 
-# after Shepard (1962, 1987)
-# if npattern==1, returns a single match in the form (nbatch, nrole)
-# else (npattern>1) returns a bank of matches in the form (nbatch, nrole, npattern)
 class MatcherGCM(nn.Module):
+    """
+    Attention-weighted euclidean distance matcher,
+    see GCM (Nosofsky 1986), ALCOVE (Kruschke 1991), etc. after Shepard (1962, 1987)
+    if npattern==1, returns a single match in the form (nbatch, nrole)
+    else (npattern>1) returns a bank of matches in the form (nbatch, nrole, npattern)
+    """
     def __init__(self, morpho_size, nfeature, npattern=1, node=''):
         super(MatcherGCM, self).__init__()
         self.morph2W    = nn.Linear(morpho_size, nfeature*npattern, bias=True)

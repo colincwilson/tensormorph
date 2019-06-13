@@ -42,21 +42,21 @@ class Trainer():
         decoder     = config.decoder
         regularizer = self.regularizer
 
-        # sample minibatch and predict outputs
+        # Sample minibatch and predict outputs
         batch = data.get_batch(nbatch=config.batch_size)
         Stems, Morphs, Outputs = batch.Stems, batch.Morphs, batch.Outputs
         max_len = 20
         pred, affix, (pivot, copy_stem, unpivot, copy_affix) =\
             model(Stems, Morphs, max_len=max_len)
 
-        # reset gradients -- this is very important
+        # Reset gradients -- this is very important
         model.zero_grad()
         decoder.zero_grad()
 
-        # get total log-likelihood loss and value for each batch member
+        # Get total log-likelihood loss and value for each batch member
         loss, losses =  self.loglik_loss(pred, Outputs, max_len)
 
-        # regularize affix toward epsilon, disprefer pivoting,
+        # Regularize affix toward epsilon, disprefer pivoting,
         # prefer stem copying
         lambda_morph = 1.0e-4
         lambda_phon = 1.0e-0
@@ -67,12 +67,12 @@ class Trainer():
             loss += lambda_phon * regularizer(W, torch.zeros_like(W))
         #loss  += lambda_reg * regularizer(output, torch.zeros_like(output))
 
-        # report current state
+        # Report current state
         if (epoch % 50 == 0):
             print (epoch, 'loss =', loss.item())
             self.report(model, decoder, Stems, Morphs, Outputs)
 
-        # update parameters
+        # Update parameters
         if gradient_update:
             loss.backward()
             self.model_optim.step()
@@ -102,11 +102,11 @@ class Trainer():
 
 
     def loglik_loss(self, pred, Outputs, max_len):
-        # get loss vector for each batch member
+        # Get loss vector for each batch member
         sim    = config.decoder(pred)   # xxx rename lhs
         losses = self.criterion(sim, Outputs)
 
-        # sum losses over positions within each output,
+        # Sum losses over positions within each output,
         # average over members of minibatch
         loss = torch.sum(losses, 1)
         loss = torch.mean(loss)
@@ -114,14 +114,18 @@ class Trainer():
         return loss, losses
 
 
-# count number of trainable parameters
 def count_parameters(module):
+    """
+    Count trainable parameters.
+    """
     return sum(p.numel() for p in module.parameters() if p.requires_grad)
 
 
-# report current processing for one example
-# xxx move
 def pretty_print(affixer, outputs, header='**root**'):
+    """
+    Report current processing for one example.
+    todo: relocate
+    """
     print('\n'+header)
     record = config.recorder.dump()
     stem = config.decoder.decode(record['root-stem_tpr'])[0]

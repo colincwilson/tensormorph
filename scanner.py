@@ -7,9 +7,11 @@ from .radial_basis import GaussianPool
 from .matcher import Matcher3
 
 
-# combine results of scanning LR-> and <-RL
-# xxx get local role flag from config
 class BiScanner(nn.Module):
+    """
+    Combine results of LR-> and <-RL scanning.
+    todo: get local role flag from config
+    """
     def __init__(self, morpho_size=1, nfeature=5, npattern=1, node=''):
         super(BiScanner, self).__init__()
         self.morpho_size = morpho_size
@@ -48,9 +50,11 @@ class BiScanner(nn.Module):
         #self.W1.bias.data[:] = -2.0
 
 
-# locate leftmost/rightmost/every instance of a pattern with 
-# directional inhibition -- assumes that role vectors are local (?)
 class InhibitoryScanner(nn.Module):
+    """
+    Locate leftmost/rightmost/every instance of a pattern with 
+    directional inhibition -- assumes that role vectors are local (?)
+    """
     def __init__(self, morpho_size, nfeature, npattern=1, direction='LR->', node=''):
         super(InhibitoryScanner, self).__init__()
         self.morpho_size, self.nfeature, self.direction =\
@@ -86,9 +90,11 @@ class InhibitoryScanner(nn.Module):
         return scan
 
 
-# locate leftmost/rightmost/every instance of pattern 
-# with recurrent gating -- assumes that role vectors are local (?)
 class RecurrentScanner(nn.Module):
+    """
+    Locate leftmost/rightmost/every instance of pattern 
+    with recurrent gating -- assumes that role vectors are local (?)
+    """
     def __init__(self, morpho_size, nfeature, direction='LR->', node=''):
         super(Scanner, self).__init__()
         self.morpho_size, self.nfeature, self.direction =\
@@ -130,9 +136,11 @@ class RecurrentScanner(nn.Module):
         return scan
 
 
-# scan stem in both directions with generic RNN cell,
-# then concatenate final outputs
 class BiLSTMScanner(nn.Module):
+    """
+    Scan stem in both directions with generic RNN cell,
+    then concatenate final outputs
+    """
     def __init__(self, hidden_size=1):
         super(BiLSTMScanner, self).__init__()
         self.hidden_size = hidden_size

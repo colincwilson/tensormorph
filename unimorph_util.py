@@ -5,7 +5,7 @@ import pandas as pd
 import glob, re, sys
 from os import path
 
-# read unimorph schema
+# Read unimorph schema
 schemafile = path.join(path.dirname(__file__), 'unimorph_schema.txt')
 schema = pd.read_csv(schemafile, delimiter='\t')
 schema['Dimension'] = [x.lower() for x in schema['Dimension']]
@@ -13,7 +13,7 @@ schema['Feature'] = [x.lower() for x in schema['Feature']]
 schema['Label'] = [x.lower() for x in schema['Label']]
 #print schema.head()
 
-# map dimension_i => {(label_ij, feature_ij)}
+# Map dimension_i => {(label_ij, feature_ij)}
 dimensions = {}
 for d in set([x for x in schema['Dimension']]):
     d_features = schema[schema['Dimension']==d]['Feature']
@@ -21,11 +21,11 @@ for d in set([x for x in schema['Dimension']]):
     dimensions[d] = {x:y for (x,y) in zip(d_labels, d_features)}
 #print dimensions
 
-# map label_ij => dimension_i
+# Map label_ij => dimension_i
 label_map = {l:d for d in dimensions for l in dimensions[d]}
 #print label_map
 
-# convert unimorph tag to dimension=label format
+# Convert unimorph tag to dimension=label format
 labels_without_dimensions = set([])
 def tag2keyvalue(morph):
     global labels_without_dimensions
@@ -40,7 +40,7 @@ def tag2keyvalue(morph):
     dimlab = ';'.join(dimlab)
     return dimlab
 
-# check conversion of all tags in conll2018-sigmorphon data
+# Check conversion of all tags in conll2018-sigmorphon data
 if False:
     print(tag2keyvalue('ADJ;NOM/ACC;FEM;SG;DEF'))
     datdir = '/Users/colin/Dropbox/TensorProductStringToStringMapping/conll-sigmorphon2018/task1/all'

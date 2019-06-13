@@ -7,10 +7,12 @@
 import torch
 import re, sys
 
-# container for global settings
-# note: use setattr(config, 'param_name', 'val') when reading  
+# xxx use setattr(config, 'param_name', 'val') when reading  
 # parameters from external file
 class config:
+    """
+    Container for global settings
+    """
     # Tensor-product representations
     epsilon             = u'ε'
     stem_begin          = u'⋊'
@@ -19,7 +21,7 @@ class config:
     random_roles        = False
     pass
 
-# xxx read params from external file
+
 def init(seq_embedder=None, morph_embedder=None):
     #from .seq_embedder   import SeqEmbedder
     from .morph_embedder import MorphEmbedder
