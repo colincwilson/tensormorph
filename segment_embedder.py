@@ -9,7 +9,7 @@ import sys
 # xxx todo: rename nfill -> nsym, dfill -> dsym throughout
 
 
-class SymbolEmbedder():
+class SegmentEmbedder():
     """
     Create segment embeddings from a feature matrix (see phon_features), 
     optionally creating random embeddings
@@ -17,7 +17,7 @@ class SymbolEmbedder():
         feature_matrix: as defined in phon_features
         randvec_params: arguments passed to randvecs
     """
-    def __init__(self, feature_matrix, randvec_params=None):
+    def __init__(self, feature_matrix=None, randvec_params=None):
         F = torch.tensor(feature_matrix.ftr_matrix.T, requires_grad=False, dtype=torch.float)
         dfill, nfill = F.shape
         if randvec_params is not None:

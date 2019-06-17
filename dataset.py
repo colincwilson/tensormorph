@@ -9,7 +9,7 @@ import re, sys
 
 from .environ import config
 from .tpr import *
-from .seq_embedder import string2sep, string2delim, string2undelim
+from .form_embedder import string2sep, string2delim, string2undelim
 #from morph_embedder import MorphEmbedder
 
 # todo: change to mutable recordtype
@@ -128,18 +128,18 @@ class DataSet():
         stem    = string2delim(stem)
         output  = string2delim(output)
 
-        seq_embedder    = config.seq_embedder
-        morph_embedder  = config.morph_embedder
+        form_embedder    = config.form_embedder
+        morphosyn_embedder  = config.morphosyn_embedder
         try:
-            Stem = seq_embedder.string2tpr(stem, False)
+            Stem = form_embedder.string2tpr(stem, False)
         except:
             print ('error embedding stem', stem)
         try:
-            Morph = morph_embedder.embed(morph)
+            Morph = morphosyn_embedder.embed(morph)
         except: 
             print ('error embedding morph', morph)
         try:
-            Output, output_len = seq_embedder.string2idvec(output, delim=False, pad=True) # xxx
+            Output, output_len = form_embedder.string2idvec(output, delim=False, pad=True) # xxx
         except:
             print ('error embedding output', output)
 

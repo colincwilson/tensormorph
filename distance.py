@@ -52,10 +52,10 @@ def euclid_batch(X, Y):
     return dist
 
 
-def pairwise_distance(X, W, A=None):
+def pairwise_distance(X, w, A=None):
     """
-    Pairwise Euclidean distance between fillers of X and patterns of W, 
-    optionally weighted by A.
+    Pairwise Euclidean distance between fillers of X and patterns of w, 
+    optionally weighted by a.
     Args:
         TPR X (nbatch, dfill, nrole) in [-1,+1]
         feature values W (nbatch, dfill, npattern) in [-1,+1]

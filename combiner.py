@@ -62,12 +62,12 @@ class Combiner(nn.Module):
                     })
 
             # Update stem/affix selection and position within each morph
-            # - switch morph at (un)pivot points, else stay
+            # - Switch morph at (un)pivot points, else stay
             a  = a + theta * theta0 - (1.0 - theta) * theta1
-            # - convex combos of advance within each morpheme and stay
+            # - Convex combos of advance within each morpheme and stay
             b0 = (1.0 - theta) * b0 + theta * (b0 + 1.0)
             b1 = theta * b1 + (1.0 - theta) * (b1 + 1.0)
-            # - advance within output only if have copied from stem or affix
+            # - Advance within output only if have copied from stem or affix
             c  = c + theta * delta0 + (1.0 - theta) * delta1
             # xxx reset affix position to 0 after unpivot (allowing for multiple affixation)
             #reset_affix = (1.0-theta)*theta2

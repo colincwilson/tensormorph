@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .environ import config
-from .data import DataBatch, write_batch
+from .dataset import DataBatch, write_batch
 from .recorder import Recorder
 
 def evaluate(model, data):

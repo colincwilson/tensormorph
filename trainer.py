@@ -132,17 +132,17 @@ def pretty_print(affixer, outputs, header='**root**'):
     affix = config.decoder.decode(record['root-affix_tpr'])[0]
     pred = config.decoder.decode(record['root-output_tpr'])[0]
     output_segs = 'NA' if outputs is None else\
-        config.seq_embedder.idvec2string(outputs[0,:].data.numpy())
+        config.form_embedder.idvec2string(outputs[0,:].data.numpy())
     copy_stem = record['root-copy_stem'].data[0,:]
     copy_affix = record['root-copy_affix'].data[0,:]
     pivot = record['root-pivot'].data[0,:]
     unpivot = record['root-unpivot'].data[0,:]
     #morph_indx = record['root-morph_indx'].data[0,:,0]
 
-    stem_segs = config.seq_embedder.idvec2string(stem)
-    stem_annotated = config.seq_embedder.idvec2string(stem, copy_stem, pivot)
-    affix_annotated = config.seq_embedder.idvec2string(affix, copy_affix, unpivot)
-    pred_segs = config.seq_embedder.idvec2string(pred)
+    stem_segs = config.form_embedder.idvec2string(stem)
+    stem_annotated = config.form_embedder.idvec2string(stem, copy_stem, pivot)
+    affix_annotated = config.form_embedder.idvec2string(affix, copy_affix, unpivot)
+    pred_segs = config.form_embedder.idvec2string(pred)
 
     print(stem_segs, '    ', output_segs, '    ', pred_segs)
     print('annotated stem:', stem_annotated)

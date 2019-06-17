@@ -4,7 +4,7 @@
 # - allow segment embeddings to be refined in training (?except for sym, begin, end features)
 
 from .environ import config
-from .symbol_embedder import SymbolEmbedder
+from .segment_embedder import SegmentEmbedder
 from .role_embedder import RoleEmbedder
 from .distance import euclid_squared
 import torch
@@ -13,11 +13,11 @@ import torch
 import re, sys
 
 
-class SeqEmbedder():
+class FormEmbedder():
     def __init__(self, symbol_params, role_params):
-        self.symbol_embedder = SymbolEmbedder(**symbol_params)
+        self.segment_embedder = SegmentEmbedder(**symbol_params)
         self.role_embedder = RoleEmbedder(**role_params)
-        self.sym2id = { sym:i for i,sym in enumerate(self.symbol_embedder.syms) }
+        self.sym2id = { sym:i for i,sym in enumerate(self.segment_embedder.syms) }
         self.id2sym = { i:sym for sym,i in self.sym2id.items() }
         print (self.sym2id)
         print (self.id2sym)

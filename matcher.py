@@ -66,6 +66,7 @@ class Matcher3(nn.Module):
         return match
 
 
+# xxx deprecate?
 class Matcher(nn.Module):
     """
     Soft regex match of a single filler

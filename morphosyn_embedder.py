@@ -14,7 +14,7 @@ import re, sys
 
 one = torch.ones(1)
 
-class MorphEmbedder():
+class MorphosynEmbedder():
     @staticmethod
     def get_embedder(language=None, dat=None):
         if language is None and dat is not None:
@@ -27,7 +27,7 @@ class MorphEmbedder():
             return DummyEmbedder()
 
 
-class UnimorphEmbedder(MorphEmbedder):
+class UnimorphEmbedder(MorphosynEmbedder):
     def __init__(self, dat):
         print('collecting dimensions and labels from morphological tags ...')
         # Convert all morph tags to unimorph dimension=label lists
@@ -114,7 +114,7 @@ class UnimorphEmbedder(MorphEmbedder):
         self.dmorph = ndims
 
 
-class HebrewEmbedder(MorphEmbedder):
+class HebrewEmbedder(MorphosynEmbedder):
     def __init__(self):
         dim2vals = {\
             'tense': ['BEINONI', 'FUTURE', 'IMPERATIVE', 'INFINITIVE', 'PAST', 'PRESENT'],\
@@ -154,7 +154,7 @@ class HebrewEmbedder(MorphEmbedder):
         return embed
 
 
-class HindiEmbedder(MorphEmbedder):
+class HindiEmbedder(MorphosynEmbedder):
     def __init__(self):
         dim2labels = {\
             'case': ['direct', 'oblique', 'vocative'],\
@@ -192,7 +192,7 @@ class HindiEmbedder(MorphEmbedder):
         return torch.cat(embeds, 0)
 
 
-class DummyEmbedder(MorphEmbedder):
+class DummyEmbedder(MorphosynEmbedder):
     def __init__(self):
         self.dmorph = 1
 
@@ -205,4 +205,4 @@ if False:
     datfile = '/Users/colin/Dropbox/TensorProductStringToStringMapping/conll-sigmorphon2018/task1/all/romanian-train-high'
     dat = pd.read_table(datfile, header=None)
     dat.columns = ['stem', 'output', 'morph']
-    MorphEmbedder = MorphEmbedder.get_embedder(None, dat)
+    MorphosynEmbedder = MorphosynEmbedder.get_embedder(None, dat)

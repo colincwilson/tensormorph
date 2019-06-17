@@ -7,7 +7,7 @@ from .tpr import *
 
 class VocabInserter(nn.Module):
     """
-    Morph look-up table implemented with linear map from morphosyn + stem scan
+    Vocabulary item look-up table implemented with linear map from morphosyn + stem scan
     """
     def __init__(self, redup=False, root=True):
         super(VocabInserter, self).__init__()
