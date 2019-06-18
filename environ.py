@@ -31,6 +31,7 @@ def init(form_embedder=None, morphosyn_embedder=None):
     config.form_embedder = form_embedder
 
     segment_embedder = form_embedder.segment_embedder
+    # xxx global change nfill -> nsym, dfill -> nftr
     for x in ['syms', 'ftrs', 'ftr_matrix', 'F', 'nfill', 'dfill']:
         setattr(config, x, getattr(segment_embedder, x))
 

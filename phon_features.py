@@ -29,8 +29,16 @@ def import_features(feature_matrix=None, segments=None, standardize=True):
     else:
         ftr_matrix = feature_matrix
 
+    # Add long segments and feature ("let there be colons")
+    ftr_matrix_short = ftr_matrix.copy()
+    ftr_matrix_long = ftr_matrix.copy()
+    ftr_matrix_short['long'] = '-'
+    ftr_matrix_long['long'] = '+'
+    ftr_matrix_long.iloc[:,0] = [x+'ː' for x in ftr_matrix_long.iloc[:,0]]
+    ftr_matrix = pd.concat([ftr_matrix_short, ftr_matrix_long], axis=0, sort=False)
+
     # List all segments and features in the matrix, find syllabic feature
-    #ftr_matrix.iloc[:,0] = [normalize('NFC', x) for x in ftr_matrix.iloc[:,0]]
+    # ftr_matrix.iloc[:,0] = [normalize('NFC', x) for x in ftr_matrix.iloc[:,0]]
     segments_all = [x for x in ftr_matrix.iloc[:,0]]
     features_all = [x for x in ftr_matrix.columns[1:]]
     syll_ftr = [ftr for ftr in features_all if re.match('^(syl|syllabic)$', ftr)][0]

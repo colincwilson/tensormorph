@@ -52,7 +52,7 @@ def euclid_batch(X, Y):
     return dist
 
 
-def pairwise_distance(X, w, A=None):
+def pairwise_distance(X, W, A=None):
     """
     Pairwise Euclidean distance between fillers of X and patterns of w, 
     optionally weighted by a.

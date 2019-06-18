@@ -40,9 +40,9 @@ class FormEmbedder():
         y_idx = [self.sym2id[yi] if yi in self.sym2id else None
                     for yi in y.split(' ')]
         if None in y_idx:
-            print ('string2idvec error:')
+            print ('string2idvec error: {}'.format(y))
             print ([sym_idx for sym_idx in zip(y.split(' '), y_idx)])
-            print (self.sym2id)
+            sys.exit(0)
         y = y_idx
         y_len = torch.LongTensor([len(y),])
         if pad:
