@@ -44,8 +44,8 @@ def import_features(feature_matrix=None, segments=None, standardize=True):
     syll_ftr = [ftr for ftr in features_all if re.match('^(syl|syllabic)$', ftr)][0]
 
     # Normalize unicode
-    segments_all = [re.sub('\u0261', 'g', x) for x in segments_all] # script g -> g
-    segments_all = [re.sub('͡', '', x) for x in segments_all] # delete tiebars
+    segments_all = [re.sub('\u0261', 'g', x) for x in segments_all] # no script g
+    segments_all = [re.sub('͡', '', x) for x in segments_all] # no tiebars
 
     # Reduce feature matrix to given segments (if provided), pruning 
     # features other than vowel_ftr that have constant or redundant values
@@ -145,11 +145,11 @@ def standardize_matrix(fm):
     return fm
 
 
-def spec2vec(ftrspecs, feature_matrix=None):
+def ftrspec2vec(ftrspecs, feature_matrix=None):
     """
     Convert dictionary of feature specifications (ftr -> +/-/0) 
-    to feature + 'attention' vectors. If feature_matrix is omitted, 
-    defaults to environ.config.
+    to feature + 'attention' vectors.
+    If feature_matrix is omitted, default to environ.config.
     """
     if feature_matrix is not None:
         features = feature_matrix.features
@@ -161,8 +161,12 @@ def spec2vec(ftrspecs, feature_matrix=None):
     w = np.zeros(n)
     a = np.zeros(n)
     for ftr,spec in ftrspecs.items():
+        if spec=='0':
+            continue
         i = features.index(ftr)
-        w[i] = specs[spec]  # non-zero feature specifications
-        a[i] = 1.0          # 'attention' weights identifying non-zero features
+        if i<0:
+            print ('ftrspec2vec: could not find feature', ftr)
+        w[i] = specs[spec]  # non-zero feature specification
+        a[i] = 1.0 # 'attention' weight identifying non-zero feature
     return w, a
     

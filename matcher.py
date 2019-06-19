@@ -5,6 +5,7 @@ from .environ import config
 from .tpr import *
 from .radial_basis import GaussianPool
 from .distance import pairwise_distance
+from .phon_features import ftrspec2vec
 
 # soft regex match over window of length 3
 class Matcher3(nn.Module):
@@ -40,10 +41,6 @@ class Matcher3(nn.Module):
         if config.discretize:
             matches = torch.round(matches)
 
-        # Mask out match results for epsilon fillers
-        mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0)\
-                .squeeze(1).unsqueeze(-1).detach()
-        matches = matches * mask
         try:
             assert(np.all(0.0 <= matches.data.numpy()))
             assert(np.all(matches.data.numpy() <= 1.0))
@@ -64,6 +61,15 @@ class Matcher3(nn.Module):
             })
 
         return match
+
+    def compile(self, ftrspecs, c=1.0):
+        """
+        Compile instance from feature specification, 
+        one for each matcher
+        """
+        for i,matcher in enumerate(['matcher_prev', 'matcher_cntr', 'matcher_next']):
+            matcher = getattr(self, matcher)
+            matcher.compile(ftrspecs[i], c)
 
 
 # xxx deprecate?
@@ -112,15 +118,14 @@ class MatcherGCM(nn.Module):
     def forward(self, X, morpho):
         nbatch = X.shape[0]
         nfeature, npattern = self.nfeature, self.npattern
-        # Feature specifications in [-1,+1] xxx see config.privative_ftrs
+        # Feature specifications in [-1,+1] xxx check config.privative_ftrs
         W = tanh(self.morph2W(morpho))\
             .view(nbatch, nfeature, npattern)
-        #w = tanh(self.morph2w(morpho)).unsqueeze(2)
+            
         # Attention weights in [0,1]
         A = sigmoid(self.morph2A(morpho))\
             .view(nbatch, nfeature, npattern)
-        #a = sigmoid(self.morph2a(morpho)).unsqueeze(2)
-        #a = torch.abs(w)
+
         # Sensitivity > 0
         c = torch.exp(self.morph2c(morpho)).unsqueeze(1)
         k = self.nfeature
@@ -132,12 +137,15 @@ class MatcherGCM(nn.Module):
             # distributed roles -> local roles
             X = torch.bmm(X, config.U)
 
+        # Match to each filler determined by 
+        # attention-weighted euclidean distance
         score = pairwise_distance(X.narrow(1,0,k), W, A)
         log_match = -c * score
-        #score = torch.pow(X.narrow(1,0,k) - w, 2.0)
-        #score = torch.sum(a * score, 1)
-        #score = torch.pow(score, 0.5)
-        #log_match = -c * score
+
+        # Mask out matches to epsilon, in log domain
+        mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0)
+        log_mask = torch.log(mask).transpose(1,2)
+        log_match += log_mask
 
         if config.recorder is not None:
             config.recorder.set_values(self.node, {
@@ -147,6 +155,24 @@ class MatcherGCM(nn.Module):
             })
 
         return log_match
+    
+
+    def compile(self, ftrspec, c=1.0):
+        """
+        Compile instance from feature specifications 
+        (see ftrspec2vec) and specificity
+        """
+        w, a = ftrspec2vec(ftrspec)
+        w = torch.FloatTensor(w)
+        a = torch.FloatTensor(a)
+        # note: weight specs correct for morph2X nonlinearities
+        self.morph2W.weight.data[:,0] = 10.0*w
+        self.morph2A.weight.data[:,0] = 20.0*(a - 0.5)
+        self.morph2c.weight.data[:] = c
+        self.morph2W.bias.data[:] = 0.0
+        self.morph2A.bias.data[:] = 0.0
+        self.morph2c.bias.data[:] = 0.0
+
 
 
 # alternative similarity functions
