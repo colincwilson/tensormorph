@@ -4,22 +4,21 @@
 from .tpr import *
 import sys
 
-def euclid_squared(y, X):
+def sqeuclid(x, Y):
     """
-    Squared Euclidean distance between vector y and each column of X
+    Squared Euclidean distance between vector x and each column of Y
     """
-    # ||y||^2
-    y_norm = (y**2.0).sum()
+    # ||x||^2
+    x_norm = torch.norm(x, p=2, dim=0)**2.0
 
-   # ||x||^2 for each column in X
-    X_norm = (X**2.0).sum(0)
-    
-    dist = X_norm + y_norm - 2.0 * y @ X
-    #print ((y @ X).shape, dist.shape)
+    # ||y||^2 for each column in Y
+    Y_norm = torch.norm(Y, p=2, dim=0)**2.0
+
+    dist = x_norm + Y_norm - 2.0 * Y.t() @ x
     return dist
 
 
-def euclid_squared_batch(X, Y):
+def sqeuclid_batch(X, Y):
     """
     Squared Euclidean distance between each column of X and all columns of Y
     see: https://discuss.pytorch.org/t/efficient-distance-matrix-computation/9065
@@ -28,15 +27,15 @@ def euclid_squared_batch(X, Y):
     """
     # ||x||^2 for each column of each batch in X
     # reshaped to N x (n x 1)
-    X_norm = (X**2.0).sum(1)
+    X_norm = torch.norm(X, p=2, dim=1)**2.0
     X_norm = X_norm.unsqueeze(2)
 
     # ||y||^2 for each column in Y 
     # reshaped to 1 x (1 x p)
-    Y_norm = (Y**2.0).sum(0)
+    Y_norm = torch.norm(Y, p=2, dim=0)**2.0
     Y_norm = Y_norm.unsqueeze(0).unsqueeze(1)
 
-    # Euclidean distance, with resulting shape N x (n x p),
+    # Squared Euclidean distance, with resulting shape N x (n x p),
     # reshaped to N x (p x n) to better match shape of X
     dist = X_norm + Y_norm - 2.0 * torch.matmul(X.transpose(1,2), Y)
     dist = dist.transpose(1,2)
@@ -47,15 +46,15 @@ def euclid_batch(X, Y):
     """
     Euclidean distance between each column of X and all columns of Y
     """
-    dist = euclid_squared_batch(X, Y)
+    dist = sqeuclid_batch(X, Y)
     dist = torch.pow(dist, 0.5)
     return dist
 
 
 def pairwise_distance(X, W, A=None):
     """
-    Pairwise Euclidean distance between fillers of X and patterns of w, 
-    optionally weighted by a.
+    Pairwise Euclidean distance between fillers of X and patterns of W, 
+    optionally with dimension weights A.
     Args:
         TPR X (nbatch, dfill, nrole) in [-1,+1]
         feature values W (nbatch, dfill, npattern) in [-1,+1]
@@ -72,6 +71,32 @@ def pairwise_distance(X, W, A=None):
     D = torch.pow(D, 0.5)
     #print (X.shape, W.shape, '->', D.shape)
     return (D)
+
+
+def cosine_batch(X, Y):
+    """
+    Cosine similarity between each column of X and all columns of Y.
+    X is N x (m x n), where N is batch index, Y is (m x p), result is N x (p x n)
+    """
+    # ||x|| for each column of each batch in X
+    # reshaped to N x (n x 1)
+    #X_norm = (X**2.0).sum(1)
+    X_norm = torch.norm(X, p=2, dim=1)
+    X_norm = X_norm.unsqueeze(2)
+
+    # ||y|| for each column in Y 
+    # reshaped to 1 x (1 x p)
+    #Y_norm = (Y**2.0).sum(0)
+    Y_norm = torch.norm(Y, p=2, dim=0)
+    Y_norm = Y_norm.unsqueeze(0).unsqueeze(1)
+
+    # Cosine similarity, with resulting shape N x (n x p), 
+    # reshaped to N x (p x n) to better match shape of X
+    sim = torch.matmul(X.transpose(1,2), Y)
+    sim /= (X_norm * Y_norm)
+    sim = sim.transpose(1,2)
+
+    return sim
 
 
 # test

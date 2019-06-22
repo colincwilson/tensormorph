@@ -3,7 +3,7 @@
 
 from .environ import config
 from .tpr import *
-from .distance import euclid_batch, euclid_squared_batch
+from .distance import euclid_batch, sqeuclid_batch
 
 
 # Map tensor product representation and discrete position to a
@@ -71,7 +71,7 @@ class LocalistDecoder(nn.Module):
     def forward(self, T):
         tau = torch.exp(self.tau) + config.tau_min
         eps = self.eps
-        dist = euclid_squared_batch(T, config.F)
+        dist = sqeuclid_batch(T, config.F)
         sim = -tau*dist + eps
         if self.debug: # verify against generic decoder
             sim_ = self.decoder(T)

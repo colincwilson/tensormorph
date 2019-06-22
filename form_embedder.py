@@ -6,7 +6,7 @@
 from .environ import config
 from .segment_embedder import SegmentEmbedder
 from .role_embedder import RoleEmbedder
-from .distance import euclid_squared
+from .distance import sqeuclid
 import torch
 #import tpr
 #from tpr import *
@@ -82,7 +82,7 @@ class FormEmbedder():
         segs = []
         for j in range(config.nrole):
             y = X @ config.U[:,j]   # unbind
-            y_dist = euclid_squared(y, config.F)
+            y_dist = sqeuclid(y, config.F)
             y_idx = torch.argmin(y_dist).item()
             segs.append(self.id2sym[y_idx])
         y = ' '.join(segs)
