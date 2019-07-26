@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .environ import config
-from .randvecs import randvecs
+from .randVecs import randvecs
 import torch
 import numpy as np
 import re, sys

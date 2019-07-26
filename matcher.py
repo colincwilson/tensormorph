@@ -18,9 +18,9 @@ class Matcher3(nn.Module):
     """
     def __init__(self, morpho_size, nfeature, npattern=1, maxout=False, node=''):
         super(Matcher3, self).__init__()
-        self.matcher_prev   = MatcherGCM(morpho_size, nfeature, npattern, node=node+'-prev')
-        self.matcher_cntr   = MatcherGCM(morpho_size, nfeature, npattern, node=node+'-cntr')
-        self.matcher_next   = MatcherGCM(morpho_size, nfeature, npattern, node=node+'-next')
+        self.matcher_prev   = MatcherWinnow(morpho_size, nfeature, npattern, node=node+'-prev')
+        self.matcher_cntr   = MatcherWinnow(morpho_size, nfeature, npattern, node=node+'-cntr')
+        self.matcher_next   = MatcherWinnow(morpho_size, nfeature, npattern, node=node+'-next')
         self.npattern       = npattern
         self.maxout         = maxout
         self.node           = node
@@ -102,9 +102,9 @@ class Matcher(nn.Module):
 class MatcherGCM(nn.Module):
     """
     Attention-weighted euclidean distance matcher,
-    see GCM (Nosofsky 1986), ALCOVE (Kruschke 1991), etc. after Shepard (1962, 1987)
-    if npattern==1, returns a single match in the form (nbatch, nrole)
-    else (npattern>1) returns a bank of matches in the form (nbatch, nrole, npattern)
+    see GCM (Nosofsky 1986), ALCOVE (Kruschke 1991), etc. after Shepard (1962, 1987).
+    If npattern==1, returns a single match with shape (nbatch, nrole)
+    else (npattern>1) returns a bank of matches with shape (nbatch, nrole, npattern)
     """
     def __init__(self, morpho_size, nfeature, npattern=1, node=''):
         super(MatcherGCM, self).__init__()
@@ -137,7 +137,7 @@ class MatcherGCM(nn.Module):
             # distributed roles -> local roles
             X = torch.bmm(X, config.U)
 
-        # Match to each filler determined by 
+        # Match of each filler determined by 
         # attention-weighted euclidean distance
         score = pairwise_distance(X.narrow(1,0,k), W, A)
         log_match = -c * score
@@ -172,6 +172,64 @@ class MatcherGCM(nn.Module):
         self.morph2W.bias.data[:] = 0.0
         self.morph2A.bias.data[:] = 0.0
         self.morph2c.bias.data[:] = 0.0
+
+
+class MatcherWinnow(nn.Module):
+    """
+    Weighted squared distance matcher inspired by classic models 
+    for learning conjunctions of boolean literals, such as Winnow.
+    Assumes that each feature is binary (could be modified to accept 
+    hard-coded set of values for each feature) with possibility of underspecification.nfeature
+    If npattern == 1, returns a single match with shape (nbatch, nrole)
+    else (npattern > 1) returns a bank of matches with shape (nbatch, nrole, npattern)nfeature
+    """
+    def __init__(self, morpho_size, nfeature, npattern=1, normalize=True, node=''):
+        super(MatcherWinnow, self).__init__()
+        self.morph2Wplus = nn.Linear(morpho_size, nfeature*npattern, bias=True)
+        self.morph2Wminus = nn.Linear(morpho_size, nfeature*npattern, bias=True)
+        self.nfeature = nfeature
+        self.npattern = npattern
+        self.normalize = normalize
+        self.node = node
+    
+    def forward(self, X, morpho):
+        nbatch = X.shape[0]
+        nfeature, npattern = self.nfeature, self.npattern
+
+        # Weights on positive (+1) and negative (-1) specifications
+        # xxx clamp values to zero according to config.privative_ftrs
+        # xxx replace softplus with ReLU or other all-positive function?
+        Wplus = nn.softplus(self.morph2Wplus(morpho))
+        Wminus = nn.softplus(self.morph2Wminus(morpho))
+
+        # Normalize weights (with weight of underspecification fixed at unity)
+        if self.normalize:
+            Z = Wplus + Wminus + 1.0
+            Wplus  = Wplus / Z
+            Wminus = Wminus / Z
+
+        if config.random_roles:
+            # distributed roles -> local roles
+            X = torch.bmm(X, config.U)
+
+        # Match of each filler determined by squared distance to +/-1 values
+        dist = Wplus  * (X.narrow(1,0,nfeature) - 1.0)**2.0 +\
+               Wminus * (X.narrow(1,0,nfeature) + 1.0)**2.0
+        log_match = -dist
+
+        # Mask out matches to epsilon, in log domain
+        mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0)
+        log_mask = torch.log(mask).transpose(1,2)
+        log_match += log_mask
+
+        if config.recorder is not None:
+            config.recorder.set_values(self.node, {
+                'Wplus':Wplus, 'Wminus':Wminus, 
+                'dist':dist,
+                'log_match':log_match
+            })
+
+        return log_match
 
 
 
