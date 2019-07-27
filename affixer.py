@@ -14,7 +14,7 @@ class Affixer(nn.Module):
     def __init__(self, node='root', reduplication=False):
         super(Affixer, self).__init__()
         self.scanner        = BiLSTMScanner(hidden_size = 1)
-        self.pivoter        = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, npattern = 3, node = node+'-pivoter')
+        self.pivoter        = BiScanner(morpho_size = config.dmorph+2, nfeature = 5, npattern = 1, node = node+'-pivoter')
         self.stem_modifier  = StemModifier()
         self.combiner       = Combiner()
         self.node           = node

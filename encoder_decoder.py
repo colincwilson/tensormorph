@@ -115,7 +115,7 @@ if model_type=='bahdanau':
         embedding,
         hidden_size
     )
-    # initalization (after Lee et al., 2015; Kann & Schutze, 2016)
+    # initalization (after Le et al., 2015; Kann & Schutze, 2016)
     # xxx change to prior over weights instead of (only) initialization
     pseudo_identity_init = torch.cat([
             torch.eye(embedding.embedding_size),

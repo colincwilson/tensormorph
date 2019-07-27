@@ -14,24 +14,27 @@ import re, sys
 
 
 class FormEmbedder():
-    def __init__(self, symbol_params, role_params):
-        self.segment_embedder = SegmentEmbedder(**symbol_params)
+    def __init__(self, segment_params, role_params):
+        self.segment_embedder = SegmentEmbedder(**segment_params)
         self.role_embedder = RoleEmbedder(**role_params)
         self.sym2id = { sym:i for i,sym in enumerate(self.segment_embedder.syms) }
         self.id2sym = { i:sym for sym,i in self.sym2id.items() }
         print (self.sym2id)
         print (self.id2sym)
 
+
     def sym2vec(self, x):
         # Map symbol to filler vector
         F = config.F
         return F.data[:, self.sym2id[x]]
-    
+
+
     def string2vec(self, x, delim=True):
         # Map space-separated string to matrix of filler vectors
         F = config.F
         idx, lens = self.string2idvec(x, delim)
         return F[:,idx], lens
+
 
     def string2idvec(self, x, delim=True, pad=False):
         # Map space-separated string to vector of indices (torch.LongTensor), 
@@ -50,6 +53,7 @@ class FormEmbedder():
         y = torch.LongTensor(y)
         return y, y_len
 
+
     def string2tpr(self, x, delim=True):
         # Map space-separated string to tpr
         y, y_len = self.string2idvec(x, delim)
@@ -60,6 +64,7 @@ class FormEmbedder():
         for i in range(y_len):
             Y += torch.ger(config.F[:,y[i]], config.R[:,i]) # outer product
         return Y
+
 
     def idvec2string(self, x, copy=None, pivot=None, trim=True):
         # Map idvec to string, marking up output with deletion 
@@ -76,6 +81,7 @@ class FormEmbedder():
         y = ' '.join(segs)
         return y
     
+
     def tpr2string(self, X, trim=True):
         # Map tpr to string by comparing successive unbound vectors 
         # to pure filler vectors with squared euclidean distance
@@ -97,11 +103,13 @@ def string2sep(x):
     y = ' '.join([xi for xi in x])
     return y
 
+
 def string2delim(x):
     # Add word delimiters; input must be space-separated
     y = [config.stem_begin,] + [xi for xi in x.split(' ')] + [config.stem_end,]
     y = ' '.join(y)
     return y
+
 
 def string2undelim(x):
     # Remove word delimiters; input can be space-separated

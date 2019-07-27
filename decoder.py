@@ -6,10 +6,12 @@ from .tpr import *
 from .distance import euclid_batch, sqeuclid_batch
 
 
-# Map tensor product representation and discrete position to a
-# log probability distribution over discrete fillers, or
-# iteratively select max prob filler in each discrete position
 class Decoder(nn.Module):
+    """
+    Map tensor product representation and discrete position to a 
+    log probability distribution over discrete fillers, or 
+    iteratively select max prob filler in each discrete position
+    """
     def __init__(self, tau=None):
         super(Decoder, self).__init__()
         self.tau = Parameter(torch.ones(1)*tau) if tau\
@@ -17,6 +19,7 @@ class Decoder(nn.Module):
         #self.tau = Parameter(torch.zeros(1), requires_grad=False)  # xxx clamped precision
         self.eps = torch.zeros(1)+1.0e-8
         self.debug = 0
+
 
     def forward(self, T):
         nbatch = T.shape[0]
@@ -35,6 +38,7 @@ class Decoder(nn.Module):
             sim[:,:,k] = -tau*dist + eps  # xxx disallowed in-place op?
         return sim
     
+
     def unbind(self, T):
         nbatch = T.shape[0]
         dfill, nrole = config.dfill, config.nrole
@@ -44,6 +48,7 @@ class Decoder(nn.Module):
             posn.fill_(k)
             fillers[:,:,k] = posn2filler_batch(T, posn)
         return fillers
+
 
     def decode(self, T):
         nbatch = T.shape[0]
@@ -56,9 +61,11 @@ class Decoder(nn.Module):
         return trace
 
 
-# Vectorized decoder -- assumes local role vectors
-# xxx consolidate with above, using change of role basis
 class LocalistDecoder(nn.Module):
+    """
+    Vectorized decoder -- assumes local role vectors
+    todo: consolidate with above, using change of role basis
+    """
     def __init__(self, tau=None):
         super(LocalistDecoder, self).__init__()
         self.tau = Parameter(torch.ones(1)*tau) if tau\
@@ -67,6 +74,7 @@ class LocalistDecoder(nn.Module):
         self.eps = torch.zeros(1)+1.0e-8
         self.debug = 0
         self.decoder = Decoder() if self.debug else None
+
 
     def forward(self, T):
         tau = torch.exp(self.tau) + config.tau_min
@@ -80,6 +88,7 @@ class LocalistDecoder(nn.Module):
             print(np.max(np.abs( sim.data.numpy() - sim_.data.numpy() )))
             sys.exit(0)
         return sim
+    
     
     def decode(self, T):
         nbatch = T.shape[0]

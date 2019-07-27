@@ -179,9 +179,10 @@ class MatcherWinnow(nn.Module):
     Weighted squared distance matcher inspired by classic models 
     for learning conjunctions of boolean literals, such as Winnow.
     Assumes that each feature is binary (could be modified to accept 
-    hard-coded set of values for each feature) with possibility of underspecification.nfeature
+    hard-coded set of values for each feature) with possibility of underspecification.
     If npattern == 1, returns a single match with shape (nbatch, nrole)
-    else (npattern > 1) returns a bank of matches with shape (nbatch, nrole, npattern)nfeature
+    else (npattern > 1) returns a bank of matches with shape (nbatch, nrole, npattern)
+    # xxx npattern > 1 broken
     """
     def __init__(self, morpho_size, nfeature, npattern=1, normalize=True, node=''):
         super(MatcherWinnow, self).__init__()
@@ -198,28 +199,32 @@ class MatcherWinnow(nn.Module):
 
         # Weights on positive (+1) and negative (-1) specifications
         # xxx clamp values to zero according to config.privative_ftrs
-        # xxx replace softplus with ReLU or other all-positive function?
-        Wplus = nn.softplus(self.morph2Wplus(morpho))
-        Wminus = nn.softplus(self.morph2Wminus(morpho))
+        # xxx replace exp with ReLU or other all-positive function?
+        Wplus = torch.exp(self.morph2Wplus(morpho)) \
+                .view(nbatch, nfeature, npattern)
+        Wminus = torch.exp(self.morph2Wminus(morpho)) \
+                .view(nbatch, nfeature, npattern)
 
         # Normalize weights (with weight of underspecification fixed at unity)
         if self.normalize:
             Z = Wplus + Wminus + 1.0
-            Wplus  = Wplus / Z
-            Wminus = Wminus / Z
+            Wplus = Wplus / Z
+            Wminus = Wplus / Z
 
         if config.random_roles:
             # distributed roles -> local roles
             X = torch.bmm(X, config.U)
 
-        # Match of each filler determined by squared distance to +/-1 values
-        dist = Wplus  * (X.narrow(1,0,nfeature) - 1.0)**2.0 +\
+        # Match of each filler determined by squared distance 
+        # to ideal +/-1 values
+        dist = Wplus * (X.narrow(1,0,nfeature) - 1.0)**2.0 +\
                Wminus * (X.narrow(1,0,nfeature) + 1.0)**2.0
+        dist = torch.sum(dist, 1)
         log_match = -dist
 
         # Mask out matches to epsilon, in log domain
         mask = hardtanh(X.narrow(1,0,1), 0.0, 1.0)
-        log_mask = torch.log(mask).transpose(1,2)
+        log_mask = torch.log(mask).squeeze(1)
         log_match += log_mask
 
         if config.recorder is not None:
