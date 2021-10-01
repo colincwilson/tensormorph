@@ -1,6 +1,6 @@
 Preprocessed data should be a pickled Python dictionary with the following entries (others are ignored):
 
-- **dat**, **dat_train**, **dat_test**, **dat_val**  
+- **data**, **data_train**, **data_test**, **data_val**  
   Pandas DataFrames containing all of the examples / train split / test split / val split.  
 
 - **segments**  
@@ -18,4 +18,4 @@ Each Pandas DataFrame containing the full data or a split should have the follow
   Space-delimited sequences of ordinary symbols (no delimiters, padding, etc.).
 
 - **morphosyn**  
-  todo: document
+  UniMorph morphosyntactic feature specification
