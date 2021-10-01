@@ -1,0 +1,41 @@
+# Data, feature, and model save directories
+data_dir: "../tensormorph_data"
+feature_dir: "ftrs"
+save_dir: "Desktop/tmorph_output" # relative to ~/
+
+# Phonological representations and constraints
+epsilon: "ϵ" # avoid 'ε' (confusable with IPA), alternative '𝜀'
+bos: "⋊" # begin delimiter
+eos: "⋉" # end delimiter
+wildcard: "□"
+features: "hayes_features.csv"
+random_fillers: False
+random_roles: False
+distrib_roles: False
+phonology: 0
+
+# Morphological representations
+morphosyn: unimorph
+dmorphophon: 0
+
+# Learning
+batch_size: 12 # 12 or small-ish value in [6, 12] (trade-off between maximizing gradient steps for low-resource and using multiple examples per batch to disambiguate hidden structure)
+learn_rate: 0.5 # 0.5 or other value in [0.1, 1.0]
+grad_clip: 0.5 # 0.5 or other value in [0.1, 2.0]
+stochastic_weight_avg: 0 # see https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/
+weight_decay: 1.0e-4 # 1.0e-4 or value in [1.0e-5, 1.0e-2]
+min_epochs: 1
+max_epochs: 20 # small-ish (because many batches per epoch)
+max_samples: 200 # xxx not used?
+lambda_reg: 1.0e-10 # xxx not used?
+loss_func: "loglik" # xxx hard-code?
+temperature: 1.0 # default is 1.0; smooth or sharpen softmax distribution
+gpus: 0
+
+# Miscellaneous and experimental
+tau_min: 0.0 # minimum precision of morph, posn attention and decoding
+eps: 1.0e-10
+sample: False
+discretize: False
+reinforce: False
+reinforce_samples: 20

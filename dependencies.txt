@@ -1,0 +1,4 @@
+pandas
+pytorch-lightning
+pytorch-struct # may cause segfault, comment out in decoder.py
+    genbmm

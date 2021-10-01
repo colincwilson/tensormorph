@@ -1,0 +1,17 @@
+# gradient descent
+max_epochs = 500
+
+optim.Adagrad
+learn_rate = 0.5  # or use pytorch lightning Trainer(auto_lr_find = True)
+gradient_clip_val = 0.5
+weight_decay = 1.0e-5 (very small)
+
+deterministic softmax
+  temperature = 1.0
+  discretize = False
+
+moderate sharpening of attention distributions
+  config.tau_min = 1.0
+
+use small batch sizes (e.g., 1-6) to maximize updates
+(and set max_epochs to an appropriately small number, 10-30)
