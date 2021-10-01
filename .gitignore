@@ -1,4 +1,8 @@
 __pycache__/
+checkpoints/
+icons/
+lightning_logs/
+noarch/
 *.pyc
 .DS_Store
 .Rhistory
