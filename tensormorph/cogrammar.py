@@ -95,7 +95,13 @@ class MultiCogrammar(nn.Module):
 
         # Deactivate morphology if requested
         if not config.morphology:
-            output = stem
+            stem.pivot = torch.zeros(nbatch, config.nrole)
+            stem.copy = torch.ones(nbatch, config.nrole)
+            output = Morph(
+                form=stem.form.clone(),
+                form_str=stem.form_str,
+                pivot=stem.pivot.clone(),
+                copy=stem.copy.clone())
 
         # Apply phonology to output of morphology [experimental]
         if self.phonology is not None:
