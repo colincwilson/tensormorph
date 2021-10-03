@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import configargparse, sys
+import argparse, configargparse, sys
 from pathlib import Path
 # Specify local directory containing modules and
 # import __all__ modules as specified in __init__.py
@@ -37,6 +37,11 @@ parser.add(
              'riggle_features.csv','one_hot'],
     default='hayes_features.csv',
     help='feature file (str)')
+parser.add_argument(
+    '--morphology',
+    action=argparse.BooleanOptionalAction,
+    default=True,
+    help='apply morphology (deactivate with --no-morphology)')
 parser.add(
     '--morphosyn',
     type=str,
@@ -44,15 +49,15 @@ parser.add(
     default='default',
     help='morphosyntactic embedder')
 parser.add(
-    '--phonology',  # xxx rename
-    type=int,
-    default=0,
-    help='size of phonological constraint bank')
-parser.add(
     '--dmorphophon',
     type=int,
     default=0,
     help='size of morphophonological context')
+parser.add(
+    '--phonology',  # xxx rename
+    type=int,
+    default=0,
+    help='size of phonological constraint bank')
 parser.add(
     '--reduplication',
     action='store_true',

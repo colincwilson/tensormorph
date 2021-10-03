@@ -74,6 +74,7 @@ class MultiCogrammar(nn.Module):
         #Mdim2unspec = config.morphosyn_embedder.Mdim2unspec
         #self.cogrammar.affixer.reset(nbatch)
 
+        # Apply morphological operations
         stem_i = stem
         for i in range(self.nslot):
             dim_attn_i = Mslot2dim_attn[..., i]
@@ -90,8 +91,11 @@ class MultiCogrammar(nn.Module):
             #    self.trace['affix_str'] = self.cogrammar.affix._str()[0]
             #    self.trace['output_str'] = self.cogrammar.output._str()[0]
             stem_i = output_i
-
         output = output_i
+
+        # Deactivate morphology if requested
+        if not config.morphology:
+            output = stem
 
         # Apply phonology to output of morphology [experimental]
         if self.phonology is not None:
@@ -100,7 +104,7 @@ class MultiCogrammar(nn.Module):
             for i in range(1):
                 phon_form = self.phonology(phon_form, torch.zeros(nbatch, 1))
             # Highway connection from output of morphology
-            morphology_hwy = sigmoid(self.morphology_hwy)  # xxx bias?
+            # morphology_hwy = sigmoid(self.morphology_hwy)  # xxx bias?
             #output.form = morphology_hwy * morph_form + \
             #              (1.0 - morphology_hwy) * phon_form
             output.form = phon_form  # xxx deactivate morph hwy gate
