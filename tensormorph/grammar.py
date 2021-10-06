@@ -151,7 +151,7 @@ class Grammar(pl.LightningModule):
 
         # L1 regularization of phonological contexts
         l1_losses = []
-        l1_lambda = 1.0e-4  # xxx config option
+        l1_lambda = 0.0  # 1.0e-4  # xxx config option
         if self.cogrammar.phonology is not None:
             for mod in self.cogrammar.phonology.matcher.modules():
                 if isinstance(mod, LiteralMatcher):
@@ -159,6 +159,13 @@ class Grammar(pl.LightningModule):
                     l1_losses.append(torch.norm(mod.W.bias, 1))
             #print(f'l1_losses {l1_losses}')
             loss += l1_lambda * torch.mean(torch.tensor(l1_losses))
+
+        # Regularization of affix form
+        affix_loss = torch.norm(
+            self.cogrammar.cogrammar.affixer.affix2form[0].weight,
+            1.0) + torch.norm(
+                self.cogrammar.cogrammar.affixer.affix2form[0].bias, 1.0)
+        loss += 1.0e-4 * affix_loss
 
         return loss, losses
 
