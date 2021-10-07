@@ -112,7 +112,7 @@ def report(grammar, batch):
     pred = cogrammar(stem0, morphosyn0, max_len)
     pretty_print(cogrammar, decoder, output, morphosyn_str)
     pred2 = grammar(batch)  # xxx hack to see output for phonology-only training
-    print(pred2._str()[0])
+    #print(pred2._str()[0])
     if cogrammar.reduplication:
         pretty_print(cogrammar.base_cogrammar, decoder)
         pretty_print(cogrammar.red_cogrammar, decoder)
@@ -182,10 +182,10 @@ def pretty_print(cogrammar, decoder, output=None, morphosyn_str=None):
     )
     print(f'stem: {stem_str}')
     print(f'affix: {affix_str}')
-    print(f'pivot_stem: {np.round(stem.pivot.cpu().data.numpy(), 2)}')
-    print(f'pivot_affix: {np.round(affix.pivot.cpu().data.numpy(), 2)}')
-    print(f'copy_stem: {np.round(stem.copy.data.cpu().numpy(), 2)}')
-    print(f'copy_affix: {np.round(affix.copy.data.cpu().numpy(), 2)}')
+    print(f'pivot_stem: {np.round(stem.pivot.cpu().data.numpy()[0], 2)}')
+    print(f'pivot_affix: {np.round(affix.pivot.cpu().data.numpy()[0], 2)}')
+    print(f'copy_stem: {np.round(stem.copy.data.cpu().numpy()[0], 2)}')
+    print(f'copy_affix: {np.round(affix.copy.data.cpu().numpy()[0], 2)}')
     #print('\tWpos:', Wpos.weight[:,0]) # np.round(Wpos.numpy(), 2))
     #print('\tWneg:', Wneg.weight[:,0]) # np.round(Wneg.numpy(), 2))
     #print('copy_affix:', np.round(copy_affix.data.numpy(), 2))
