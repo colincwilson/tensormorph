@@ -187,6 +187,7 @@ def train_and_evaluate():
     torch.save(grammar.state_dict(),
                config.save_dir / f'{config.data_name}_model.pt')
     evaluate('train')
+    evaluate('val')
     evaluate('test')
 
 
@@ -202,10 +203,10 @@ def evaluate(split):  # xxx move testing to grammar module
     data['score'] = [int(i) for i in (data['pred'] == data['output'])]
     pred_accuracy = data['score'].mean()
     pred_errors = data[(data['score'] == 0)]
-    print(
-        f'{split} accuracy: {pred_accuracy} ({len(pred_errors)}/{len(data)} errors)'
-    )
-    print(pred_errors.head())
+    print(f'{split} accuracy: {pred_accuracy} '
+          f'({len(pred_errors)}/{len(data)} errors)')
+    if len(pred_errors) > 0:
+        print(pred_errors.head())
     data.to_csv(
         config.save_dir / f'{config.data_name}_{split}_results.csv',
         index=False)
