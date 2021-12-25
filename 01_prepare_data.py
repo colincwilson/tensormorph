@@ -164,7 +164,7 @@ def main():
     if args.morphosyn is not None and args.morphosyn != 'None':
         data['morphosyn'] = args.morphosyn
 
-    # Apply string ops
+    # Restructure data
     dats = {
         'stem': [x for x in data['stem']],
         'output': [x for x in data['output']],
@@ -172,6 +172,13 @@ def main():
         'held_out_stems': []
     }
 
+    # Collect segments from stems and outputs prior to string ops
+    if not args.split_strings:
+        segs = segments(dats, args, sep='')
+        print(f'Segments: {segs}')
+        print()
+
+    # Apply string ops
     if args.held_in_stems is not None:
         dats['held_in_stems'] = args.held_in_stems
 
@@ -186,6 +193,7 @@ def main():
         for key, val in dats.items():
             dats[key] = [x.lower() for x in val]
 
+    # Apply substitutions
     if args.substitutions is not None:
         print(f'Applying substitutions\n{args.substitutions}')
         for s, r in args.substitutions.items():
@@ -215,15 +223,8 @@ def main():
     print()
 
     # Collect segments from stems and outputs
-    vowels = args.vowels
-    segments = set(vowels)
-    for stem in data['stem']:
-        segments |= set(stem.split())
-    for output in data['output']:
-        segments |= set(output.split())
-    segments = [x for x in segments]
-    segments.sort()
-    print(f'Segments that appear in the data: {segments}')
+    segs = segments(data, args)
+    print(f'Segments in the modified data: {segments(data, args)}')
     print()
 
     # Dataset prior to split
@@ -231,8 +232,8 @@ def main():
         'data': data,
         'held_in_stems': dats['held_in_stems'],
         'held_out_stems': dats['held_out_stems'],
-        'segments': segments,
-        'vowels': vowels,
+        'segments': segs,
+        'vowels': args.vowels,
         'max_len': max_len
         #'morphosyn_embedder': morphosyn_embedder
     }
@@ -278,6 +279,21 @@ def main():
     data_test.to_csv(
         data_dir / Path(f'{split_file.name}_test.csv'), index=False)
     return dataset
+
+
+def segments(data, args, sep=' '):
+    """
+    Unique segments in stem or output
+    """
+    vowels = args.vowels
+    segments = set(vowels)
+    for stem in data['stem']:
+        segments |= set(stem.split(sep)) if sep != '' else set(stem)
+    for output in data['output']:
+        segments |= set(output.split(sep)) if sep != '' else set(output)
+    segments = [x for x in segments]
+    segments.sort()
+    return (segments)
 
 
 def split_data(dataset, val_prop, test_prop):
