@@ -97,22 +97,23 @@ print(args)
 def main():
     data_dir = Path(args.data_dir) if args.data_dir is not None \
         else Path(args.config).parent
-    if args.morphosyn is None or args.morphosyn == 'None':
-        colnames = ['stem', 'output', 'morphosyn']
-    else:
-        colnames = ['stem', 'output']
+    #if args.morphosyn is None or args.morphosyn == 'None':
+    #    colnames = ['stem', 'output', 'morphosyn']
+    #else:
+    #    colnames = ['stem', 'output']
+    colnames = ['stem', 'output', 'morphosyn']
 
     if args.data_file is not None:
         # Data to be split into train | val | test
         data_file = data_dir / Path(args.data_file)
         print(f'Preparing data from {data_file} ...')
         data = pd.read_table(
-            data_file,
-            comment='#',
-            sep=args.delim,
-            usecols=colnames,
-            names=colnames,
-            engine='python')
+            data_file, comment='#', sep=args.delim, engine='python')
+        if len(data) > 3:
+            data = data[data.columns[0:3]]
+        if len(data) < 3:
+            data['morphosyn'] = 'lgspec1'
+        data.columns = colnames
         split_flag = True
         if (data['stem'][0] == 'stem' or data['output'][0] == 'output' or
                 data['morphosyn'][0] == 'morphosyn'):
@@ -167,10 +168,6 @@ def main():
     print(data.head())
     print(f'Maximum input/output length: {max_len}')
     print()
-
-    # Default morphosyn
-    if args.morphosyn is not None and args.morphosyn != 'None':
-        data['morphosyn'] = args.morphosyn
 
     # Restructure data
     dats = {

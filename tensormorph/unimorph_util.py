@@ -5,10 +5,10 @@ import glob, re, sys
 from os import path
 
 # Read unimorph schema
-schemafile = path.join(path.dirname(__file__), '../ftrs/unimorph_schema.txt')
-schema = pd.read_csv(schemafile,
-                     delimiter='\t',
-                     usecols=['Dimension', 'Feature', 'Label'])
+schemafile = path.join(
+    path.dirname(__file__), '../features/unimorph_schema.txt')
+schema = pd.read_csv(
+    schemafile, delimiter='\t', usecols=['Dimension', 'Feature', 'Label'])
 schema['Dimension'] = [x.lower() for x in schema['Dimension']]
 schema['Feature'] = [x.lower() for x in schema['Feature']]
 schema['Label'] = [x.lower() for x in schema['Label']]

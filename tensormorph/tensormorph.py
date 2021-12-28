@@ -66,7 +66,7 @@ def init(args):
                                                         data['vowels'])
     else:
         feature_matrix = phon_features.import_features(
-            Path('.') / 'ftrs' / args.features,
+            Path('.') / 'features' / args.features,
             data['segments'],
             save_file=config.fdata)
     symbol_params = {'feature_matrix': feature_matrix}
