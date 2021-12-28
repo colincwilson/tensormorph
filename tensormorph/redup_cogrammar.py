@@ -7,7 +7,7 @@ from cogrammar import Cogrammar
 from birnn_pivoter import BiRNNPivoter
 #from phonology import PhonoRules, PhonoRule
 from correspondence import BiCorrespondence
-from affixer import Affixer  # xxx spurious
+from affixer import AffixVocab  # xxx spurious
 
 
 class RedupCogrammar(nn.Module):
@@ -40,10 +40,10 @@ class RedupCogrammar(nn.Module):
 
         # Apply base and red cogrammars to stem
         #base = self.phono_rules(stem)
-        base = self.base_cogrammar(Morph(stem.form, stem.form_str), morphosyn,
-                                   max_len)
-        red = self.red_cogrammar(Morph(stem.form, stem.form_str), morphosyn,
-                                 max_len)
+        base = self.base_cogrammar(
+            Morph(stem.form, stem.form_str), morphosyn, max_len)
+        red = self.red_cogrammar(
+            Morph(stem.form, stem.form_str), morphosyn, max_len)
 
         # Determine position of reduplicant insertion
         # in base and end of reduplicant

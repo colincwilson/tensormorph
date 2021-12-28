@@ -4,8 +4,9 @@ import config
 from recorder import labeled_tensor
 from tpr import *
 from morph import MorphOp, Morph
-from affixer import Affixer
-from affixer2 import Affixer2
+#from affixer import AffixVocab
+#from affixer2 import Affixer2
+from affix_vocab import AffixVocab
 #from pivoter import BiPivoter
 from truncater import BiTruncater
 from matcher import Matcher3, EndMatcher3
@@ -54,8 +55,9 @@ class MultiCogrammar(nn.Module):
 
     def forward(self, stem, morphosyn, max_len):
         nbatch = stem.form.shape[0]
-        dim2embed = config.morphosyn_embedder.dim2embed
-        morphosyn_zeros = [dim2embed[dim][:, 0] for dim in dim2embed.keys()]
+        #dim2embed = config.morphosyn_embedder.dim2embed
+        Mdim2units = config.morphosyn_embedder.Mdim2units
+        #morphosyn_zeros = [dim2embed[dim][:, 0] for dim in dim2embed.keys()]
         #morphospec = [(morphosyn[j][:,0] != 1).float()
         #              for j in range(config.ndim)]
         #morphospec = torch.stack(morphospec, -1)
@@ -78,11 +80,13 @@ class MultiCogrammar(nn.Module):
         stem_i = stem
         for i in range(self.nslot):
             dim_attn_i = Mslot2dim_attn[..., i]
-            morphosyn_i = [
-                dim_attn_i[j] * morphosyn[j]  #+  
-                #    #((1.0 - dim_attn_i[j]) * morphosyn_zeros[j]).view(1,-1)
-                for j in range(config.ndim)
-            ]
+            ftr_attn_i = dim_attn_i @ Mdim2units.t()
+            morphosyn_i = morphosyn * ftr_attn_i.unsqueeze(0)
+            #morphosyn_i = [
+            #    dim_attn_i[j] * morphosyn[j]  #+
+            #    #    #((1.0 - dim_attn_i[j]) * morphosyn_zeros[j]).view(1,-1)
+            #    for j in range(config.ndim)
+            #]
             #morphosyn_i = morphosyn
             output_i = self.cogrammar(stem_i, morphosyn_i, max_len)
 
@@ -142,7 +146,8 @@ class Cogrammar(nn.Module):
 
     def __init__(self):
         super(Cogrammar, self).__init__()
-        self.affixer = Affixer()  # Affixer2()
+        self.affix_vocab = AffixVocab(
+            dcontext=config.dcontext, daffix=10)  # Affixer()  # Affixer2()
         self.morph_op = MorphOp()
         self.reduplication = False
         self.correspondence = None  # xxx not used
@@ -178,15 +183,16 @@ class Cogrammar(nn.Module):
         if self.morphophon1 is not None:
             x, (h_n, c_n) = self.morphophon1(stem.form.transpose(1, 2))
             mphon = h_n[0]
+            context = torch.stack([morphosyn, mphon], -1)
             #mphon = self.morphophon1(stem.form, torch.zeros(nbatch, 1))
             #mphon = self.morphophon2(mphon)
         else:
             mphon = torch.zeros((nbatch, config.dmorphophon),
                                 requires_grad=False)
+            context = morphosyn
 
         # Affixation operation
-        context = morphosyn + [mphon]
-        stem, affix, p_zero = self.affixer(stem, context)
+        stem, affix, p_zero = self.affix_vocab(stem, context)
         output = self.morph_op(stem, affix)
 
         # Zero affixation (similar to highway connection)

@@ -161,11 +161,11 @@ class Grammar(pl.LightningModule):
             loss += l1_lambda * torch.mean(torch.tensor(l1_losses))
 
         # Regularization of affix form
-        affix_loss = torch.norm(
-            self.cogrammar.cogrammar.affixer.affix2form[0].weight,
-            1.0) + torch.norm(
-                self.cogrammar.cogrammar.affixer.affix2form[0].bias, 1.0)
-        loss += 1.0e-4 * affix_loss
+        #affix_loss = torch.norm(
+        #    self.cogrammar.cogrammar.affixer.context2form[0].weight,
+        #    1.0) + torch.norm(
+        #        self.cogrammar.cogrammar.affixer.affix2form[0].bias, 1.0)
+        #loss += 1.0e-4 * affix_loss
 
         return loss, losses
 

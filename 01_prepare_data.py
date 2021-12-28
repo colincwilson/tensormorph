@@ -27,16 +27,17 @@ parser.add(
     is_config_file=True,
     help='path to configuration file (str)')
 
-# Required: Specify data to split or pre-split train and test files
+# Required: Specify data to split, or pre-split train and test files
 parser.add('--data_file', type=str, help='path to data file (str)')
 parser.add('--train_file', type=str, help='path to pre-split train file (str)')
 parser.add('--val_file', type=str, help='path to pre-split val file (str)')
 parser.add('--test_file', type=str, help='path to pre-split test file (str)')
 
 # Additional options
-parser.add('--data_dir', type=str, help='directory containing data (str)')
-parser.add('--pkl_file', type=str, help='path to output file (str)')
-parser.add('--delim', type=str, help='delimiter in data file (str)')
+parser.add('--data_dir', type=str, help='data directory (str)')
+parser.add('--pkl_file', type=str, help='path to output pkl file (str)')
+parser.add(
+    '--delim', type=str, default=',', help='delimiter in data file (str)')
 parser.add('--morphosyn', help='default morphosyntactic specification (str)')
 parser.add(
     '--max_len', type=int, help='maximum length of input/output forms (int)')
@@ -69,6 +70,11 @@ parser.add(
     nargs='+',
     help='vowel symbols (list)')  # xxx no longer obligatory?
 parser.add(
+    '--data_proportion',
+    type=float,
+    default=1.0,
+    help='proportion of full data set used for train+val+test (float)')
+parser.add(
     '--val_proportion',
     type=float,
     default=0.10,
@@ -91,7 +97,6 @@ print(args)
 def main():
     data_dir = Path(args.data_dir) if args.data_dir is not None \
         else Path(args.config).parent
-    delim = ',' if args.delim is None else args.delim
     if args.morphosyn is None or args.morphosyn == 'None':
         colnames = ['stem', 'output', 'morphosyn']
     else:
@@ -104,11 +109,14 @@ def main():
         data = pd.read_table(
             data_file,
             comment='#',
-            sep=delim,
+            sep=args.delim,
             usecols=colnames,
             names=colnames,
             engine='python')
         split_flag = True
+        if (data['stem'][0] == 'stem' or data['output'][0] == 'output' or
+                data['morphosyn'][0] == 'morphosyn'):
+            print('Warning: first row of data appears to be header')
     else:
         # Pre-split train | (val) | test
         # Train
@@ -224,7 +232,7 @@ def main():
 
     # Collect segments from stems and outputs
     segs = segments(data, args)
-    print(f'Segments in the modified data: {segments(data, args)}')
+    print(f'Segments in the modified data: {segs}')
     print()
 
     # Dataset prior to split
@@ -241,6 +249,7 @@ def main():
     # Split data
     if split_flag:
         data_train, data_val, data_test = split_data(dataset,
+                                                     args.data_proportion,
                                                      args.val_proportion,
                                                      args.test_proportion)
         data_train['split'] = 'train'
@@ -296,7 +305,7 @@ def segments(data, args, sep=' '):
     return (segments)
 
 
-def split_data(dataset, val_prop, test_prop):
+def split_data(dataset, data_prop, val_prop, test_prop):
     """
     Random split into train/val/test, handling held_in/out_stems
     """
@@ -316,6 +325,11 @@ def split_data(dataset, val_prop, test_prop):
                     reset_index(drop = True)
         data = data[~(data['stem'].isin(held_out_stems))].\
                     reset_index(drop = True)
+
+    # Subset data before splitting
+    if data_prop < 1.0:
+        data, _ = \
+            train_test_split(data, test_size = 1.0 - data_prop)
 
     # Split non-held into train and val+test
     nontrain_size = (val_prop + test_prop)

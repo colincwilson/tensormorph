@@ -48,8 +48,8 @@ class UnimorphEmbedder(MorphosynEmbedder):
         tags = reduce((lambda x, y: x | y), tags, set([]))
         tags_unk = [x for x in tags if re.search('[?]', x)]
         if len(tags_unk) > 0:
-            print('Tags with unknown dimensions or labels:', tags_unk)
-            sys.exit(0)
+            raise Exception(
+                f'Tags with unknown dimensions of labels: {tags_unk}')
         dimlabs = [x.split('=') for x in tags]
         #print(dimlabs)
 
@@ -123,7 +123,7 @@ class UnimorphEmbedder(MorphosynEmbedder):
 
     def embed(self, morphosyn):
         """
-        Tuple of embeddings of labels in morphosyn
+        Embeddings of labels in morphosyn
         """
         dims, dim2labels, dim2embed = \
             self.dims, self.dim2labels, self.dim2embed
@@ -139,14 +139,14 @@ class UnimorphEmbedder(MorphosynEmbedder):
             embeds.append(dim2embed[dim][:, indx])
             #specs[i] = 0.0 if lab == 'Ø' else 1.0
             #print(dim, lab, embeds[-1])
-        #embed = torch.cat(embeds, 0)
+        embed = torch.cat(embeds, 0)
         #spec = torch.tensor(specs, dtype=torch.float)
         #if self.pca is not None:
         #    embed = self.pca.transform(embed.unsqueeze(0).data.numpy())
         #    embed = torch.FloatTensor(embed).squeeze(0)
         #    return embed
         #print(morphosyn, embed, spec)
-        return embeds
+        return embed
 
     # xxx not used
     def reduce_dimension(self, dat):
@@ -181,7 +181,7 @@ class HebrewEmbedder(MorphosynEmbedder):
             'person': ['E', 'FIRST', 'SECOND', 'THIRD'],\
             'gender': ['E', 'F', 'M', 'MF'],\
             'number': ['E', 'PLURAL', 'SINGULAR'],\
-            'complete': ['COMPLETE', 'MISSING']             \
+            'complete': ['COMPLETE', 'MISSING']                                  \
         }
         dims = ['tense', 'person', 'gender', 'number', 'complete']
         val2dim = {y: x for x in dim2vals for y in dim2vals[x]}
@@ -222,7 +222,7 @@ class HindiEmbedder(MorphosynEmbedder):
         dim2labels = {\
             'case': ['direct', 'oblique', 'vocative'],\
             'number': ['singular', 'plural'],\
-            'gender': ['masculine', 'feminine', 'neuter']             \
+            'gender': ['masculine', 'feminine', 'neuter']                                  \
         }
         dims = ['case', 'number', 'gender']
         label2dim = {y: x for x in dim2labels for y in dim2labels[x]}

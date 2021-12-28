@@ -21,6 +21,10 @@ from tensormorph import *
 parser = configargparse.ArgParser(
     config_file_parser_class=configargparse.YAMLConfigFileParser)
 parser.add(
+    '--config',
+    default='model_config.yaml',
+    help='path to configuration file (str)')
+parser.add(
     '--data_dir',
     type=str,
     default='../tensormorph_data',
@@ -64,12 +68,9 @@ parser.add(
     help='use reduplication cogrammar (bool)')
 parser.add('--batch_size', type=int, default=12)
 parser.add('--max_epochs', type=int, default=20)
-parser.add(
-    '--config',
-    default='model_config.yaml',
-    help='path to configuration file (str)')
 args = parser.parse_args()
 print(args)
+#sys.exit(0)
 #dataset = args.data
 # xxx save args as pkl for model loading after run
 

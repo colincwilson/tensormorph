@@ -47,7 +47,7 @@ class MorphDatapoint(dict):
             stem_str = str_util.add_delim(stem)
             stem = form_embedder.string2tpr(stem_str, delim=False)
         except Exception as e:
-            print(f'error embedding stem {stem_str}')
+            print(f'Error embedding stem {stem_str}')
             print(e)
             sys.exit(0)
 
@@ -57,7 +57,7 @@ class MorphDatapoint(dict):
             output_id, _ = form_embedder.string2idvec(
                 output_str, delim=False, pad=True)
         except Exception as e:
-            print(f'error embedding output {output_str}')
+            print(f'Error embedding output {output_str}')
             print(e)
             sys.exit(0)
 
@@ -65,7 +65,7 @@ class MorphDatapoint(dict):
             morphosyn_str = morphosyn
             morphosyn = morphosyn_embedder.embed(morphosyn_str)
         except Exception as e:
-            print(f'error embedding morphosyn {morphsyn_str}')
+            print(f'Error embedding morphosyn {morphsyn_str}')
             print(e)
             sys.exit(0)
 
@@ -94,13 +94,7 @@ def morph_batcher(batch):
     stem = torch.stack([ex['stem'] for ex in batch], 0)
     output_id = torch.stack([ex['output_id'] for ex in batch], 0)
     output = torch.stack([ex['output'] for ex in batch], 0)
-    morphosyn = [
-        torch.stack([ex['morphosyn'][i]
-                     for ex in batch], 0)
-        for i in range(config.ndim)
-    ]
-    #morphospec = torch.stack(
-    #    [ex['morphospec'] for ex in batch], 0)
+    morphosyn = torch.stack([ex['morphosyn'] for ex in batch], 0)
     stem_str = [ex['stem_str'] for ex in batch]
     output_str = [ex['output_str'] for ex in batch]
     morphosyn_str = [ex['morphosyn_str'] for ex in batch]

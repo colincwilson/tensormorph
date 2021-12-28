@@ -104,7 +104,8 @@ def report(grammar, batch):
         form=stem.form.narrow(0, 0, 1),
         form_str=stem.form_str[0],
         length=stem.length.narrow(0, 0, 1))
-    morphosyn0 = [x.narrow(0, 0, 1) for x in morphosyn]
+    #morphosyn0 = [x.narrow(0, 0, 1) for x in morphosyn]
+    morphosyn0 = morphosyn.narrow(0, 0, 1)
     #morphospec0 = morphospec.narrow(0,0,1)
     #Stem0 = stem.form.narrow(0,0,1); Stem0.slen = Stem.slen.narrow(0,0,1)
     #Morphosyn0 = Morphosyn.narrow(0,0,1)

@@ -16,15 +16,15 @@ import mcmc
 import prior
 
 
-class Affixer(nn.Module):
+class AffixVocab(nn.Module):
     """
     Affix look-up with optional stem truncation
     todo: relocate truncation? currently disabled
     todo: remove parameters for values beyond max affix length (= 10)
     """
 
-    def __init__(self, morphophon=False):
-        super(Affixer, self).__init__()
+    def __init__(self, daffix=None, dcontext=None, morphophon=False):
+        super(AffixVocab, self).__init__()
         self.max_affix_len = max_affix_len = 10
 
         self.pivot_type = ['birnn', 'position', 'prosodic'][1]

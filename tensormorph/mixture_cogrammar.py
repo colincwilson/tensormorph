@@ -3,7 +3,7 @@
 import config
 from tpr import *
 from morph import MorphOp, Morph
-from affixer import Affixer
+from affixer import AffixVocab
 #from stem_modifier import StemModifier
 from birnn_pivoter import BiRNNPivoter
 from truncater import BiTruncater
@@ -22,7 +22,7 @@ class MixtureCogrammar(nn.Module):
 
     def __init__(self):
         super(MixtureCogrammar, self).__init__()
-        self.affixer = Affixer()  # rename AffixVocab?
+        self.affixer = AffixVocab()
         self.morph_op = MorphOp()  # rename morph_combiner?
         self.reduplication = False
         self.correspondence = None  # xxx not used
