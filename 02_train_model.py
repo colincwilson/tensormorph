@@ -18,22 +18,20 @@ from tensormorph import *
 # python 00train_model.py --data synth_redup/data/partial_and_initial_cv_100 --features one_hot --reduplication
 # python 00train_model.py --data unimorph/que_noun --morphosyn unimorph
 
+# Commandline arguments / yaml file specifying data and model specs
 parser = configargparse.ArgParser(
+    default_config_files=['model_config.yaml'],
     config_file_parser_class=configargparse.YAMLConfigFileParser)
+
+# Custom config file
 parser.add(
     '--config',
-    default='model_config.yaml',
+    type=str,
+    is_config_file=True,
     help='path to configuration file (str)')
-parser.add(
-    '--data_dir',
-    type=str,
-    default='../tensormorph_data',
-    help='directory containing data')
-parser.add(
-    '--data',
-    type=str,
-    default='chamorro/chamorro_um',
-    help='path to pickled dataset (str)')
+
+parser.add('--data_dir', type=str, help='directory containing data (str)')
+parser.add('--data_pkl', type=str, help='path to pickled dataset (str)')
 parser.add(
     '--features',
     type=str,
@@ -68,10 +66,20 @@ parser.add(
     help='use reduplication cogrammar (bool)')
 parser.add('--batch_size', type=int, default=12)
 parser.add('--max_epochs', type=int, default=20)
-args = parser.parse_args()
+
+# Config file / commandline options
+args, _ = parser.parse_known_args()
+
+# Default simulation (use if no data specified)
+if args.data_pkl is None:
+    args.data_dir = '../tensormorph_data/chamorro'
+    args.data_pkl = 'chamorro_um.pkl'
+
+# Default data directory (relative to config)
+if args.data_dir is None:
+    args.data_dir = Path(args.config).parent
+
 print(args)
-#sys.exit(0)
-#dataset = args.data
 # xxx save args as pkl for model loading after run
 
 tensormorph.init(args)

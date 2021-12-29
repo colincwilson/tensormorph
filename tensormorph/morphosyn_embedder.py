@@ -181,7 +181,7 @@ class HebrewEmbedder(MorphosynEmbedder):
             'person': ['E', 'FIRST', 'SECOND', 'THIRD'],\
             'gender': ['E', 'F', 'M', 'MF'],\
             'number': ['E', 'PLURAL', 'SINGULAR'],\
-            'complete': ['COMPLETE', 'MISSING']                                  \
+            'complete': ['COMPLETE', 'MISSING']                                    \
         }
         dims = ['tense', 'person', 'gender', 'number', 'complete']
         val2dim = {y: x for x in dim2vals for y in dim2vals[x]}
@@ -222,7 +222,7 @@ class HindiEmbedder(MorphosynEmbedder):
         dim2labels = {\
             'case': ['direct', 'oblique', 'vocative'],\
             'number': ['singular', 'plural'],\
-            'gender': ['masculine', 'feminine', 'neuter']                                  \
+            'gender': ['masculine', 'feminine', 'neuter']                                    \
         }
         dims = ['case', 'number', 'gender']
         label2dim = {y: x for x in dim2labels for y in dim2labels[x]}
@@ -281,13 +281,14 @@ class DefaultEmbedder(MorphosynEmbedder):
         self.dim2size = [
             1,
         ]
-        self.embed_ = torch.ones(1)
-        self.spec_ = torch.ones(1)
+        self._embed = torch.ones(1)
+        self._spec = torch.ones(1)
         self.dims = ['default']
         self.dim2embed = {'default': torch.ones(1, 1)}
 
     def embed(self, morphosyn):
-        return self.embed_, self.spec_
+        return self._embed
+        #return self.embed_, self.spec_
 
 
 # unit test

@@ -1,8 +1,3 @@
-# Data, feature, and model save directories
-data_dir: "../tensormorph_data"
-feature_dir: "ftrs"
-save_dir: "Desktop/tmorph_output" # relative to ~/
-
 # Phonological representations and constraints
 epsilon: "ϵ" # avoid 'ε' (confusable with IPA), alternative '𝜀'
 bos: "⋊" # begin delimiter

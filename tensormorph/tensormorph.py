@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pickle, yaml
+import pickle, yaml, sys
 from pathlib import Path
 import numpy as np
 import torch
@@ -26,31 +26,32 @@ def init(args):
     Initialize tensormorph model
     """
     # # # # # # # # # #
-    # Load global options into config
-    with open(args.config, 'rb') as fconfig:
-        configs = yaml.safe_load(fconfig)  # dict
-    # Override options from commandline
+    # Load default model options into args
+    with open('model_config.yaml', 'r') as f:
+        args_default = yaml.load(f)
+    for key, val in args_default.items():
+        if not hasattr(args, key):
+            setattr(args, key, val)
+
+    # Load options into config
     for key, val in vars(args).items():
-        configs[key] = val
-    # Simulation identifier and args
-    configs['data_name'] = Path(configs['data']).name
-    config.args = args
-    # Set string options
-    phon_config.init(configs)
-    # Set global options
-    for key, val in configs.items():
         setattr(config, key, val)
-    if config.gpus is not None and config.gpus > 0:
+    if not hasattr(config, 'save_dir'):
+        config.save_dir = str(Path.home() / 'Desktop/tmorph_output')
+    if not hasattr(config, 'data_name'):
+        config.data_name = config.data_pkl
+    if config.gpus > 0:
         config.device = torch.device('cuda:0')
     else:
         config.device = torch.device('cpu')
-    setattr(config, 'save_dir', Path.home() / config.save_dir)
-    if not config.save_dir.exists():
-        config.save_dir.mkdir()
+    config.args = args
+
+    # String config
+    phon_config.init(args)
 
     # # # # # # # # # #
     # Load data
-    config.fdata = Path(config.data_dir) / f'{args.data}.pkl'
+    config.fdata = Path(config.data_dir) / args.data_pkl
     with open(config.fdata, 'rb') as f:
         data = pickle.load(f)
     config.data = data
@@ -181,11 +182,11 @@ def train_and_evaluate():
     )
     trainer.fit(grammar)
 
-    with open(config.save_dir / f'{config.data_name}_config.pkl',
-              'wb') as fargs:
-        pickle.dump(config.args, fargs)
+    with open(Path(config.save_dir) / f'{config.data_name}_config.pkl',
+              'wb') as f:
+        pickle.dump(config.args, f)
     torch.save(grammar.state_dict(),
-               config.save_dir / f'{config.data_name}_model.pt')
+               Path(config.save_dir) / f'{config.data_name}_model.pt')
     evaluate('train')
     evaluate('val')
     evaluate('test')
@@ -208,7 +209,7 @@ def evaluate(split):  # xxx move testing to grammar module
     if len(pred_errors) > 0:
         print(pred_errors.head())
     data.to_csv(
-        config.save_dir / f'{config.data_name}_{split}_results.csv',
+        Path(config.save_dir) / f'{config.data_name}_{split}_results.csv',
         index=False)
 
     #config.decoder.add_noise = True

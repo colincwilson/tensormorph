@@ -27,7 +27,7 @@ parser.add(
     is_config_file=True,
     help='path to configuration file (str)')
 
-# Required: Specify data to split, or pre-split train and test files
+# Required: Specify data to split -or- pre-split train|val|test files
 parser.add('--data_file', type=str, help='path to data file (str)')
 parser.add('--train_file', type=str, help='path to pre-split train file (str)')
 parser.add('--val_file', type=str, help='path to pre-split val file (str)')
@@ -35,7 +35,7 @@ parser.add('--test_file', type=str, help='path to pre-split test file (str)')
 
 # Additional options
 parser.add('--data_dir', type=str, help='data directory (str)')
-parser.add('--pkl_file', type=str, help='path to output pkl file (str)')
+parser.add('--data_pkl', type=str, help='path to output pkl file (str)')
 parser.add(
     '--delim', type=str, default=',', help='delimiter in data file (str)')
 parser.add('--morphosyn', help='default morphosyntactic specification (str)')
@@ -90,13 +90,15 @@ parser.add(
     default=0,
     help='enforce minimum size of train split by upsampling (int)')
 
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 print(args)
 
 
 def main():
-    data_dir = Path(args.data_dir) if args.data_dir is not None \
-        else Path(args.config).parent
+    data_dir = Path(args.data_dir) if args.data_dir is not None else Path(
+        args.config).parent
+    #data_dir = Path(args.data_dir) if args.data_dir is not None \
+    #    else Path(args.config).parent
     #if args.morphosyn is None or args.morphosyn == 'None':
     #    colnames = ['stem', 'output', 'morphosyn']
     #else:
@@ -109,11 +111,13 @@ def main():
         print(f'Preparing data from {data_file} ...')
         data = pd.read_table(
             data_file, comment='#', sep=args.delim, engine='python')
-        if len(data) > 3:
+        if len(data.columns) > 3:
             data = data[data.columns[0:3]]
-        if len(data) < 3:
-            data['morphosyn'] = 'lgspec1'
+        if len(data.columns) < 3:
+            data['morphosyn'] = 'lgspec'
         data.columns = colnames
+        for key in colnames:
+            data[key] = data[key].str.strip()
         split_flag = True
         if (data['stem'][0] == 'stem' or data['output'][0] == 'output' or
                 data['morphosyn'][0] == 'morphosyn'):
@@ -272,16 +276,17 @@ def main():
           f'test {len(data_test)}')
 
     # Save full dataset (pkl) and individual splits (csv)
-    if args.pkl_file is not None:
-        pkl_file = Path(args.pkl_file).with_suffix('.pkl')
-        split_file = Path(args.pkl_file).with_suffix('')
+    if args.data_pkl is not None:
+        data_pkl = Path(args.data_pkl).with_suffix('.pkl')
+        split_file = Path(args.data_pkl).with_suffix('')
     else:
-        pkl_file = Path(args.data_file).with_suffix('.pkl')
+        data_pkl = Path(args.data_file).with_suffix('.pkl')
         split_file = Path(args.data_file).with_suffix('')
-    pickle.dump(dataset, open(data_dir / pkl_file, 'wb'))
+    pickle.dump(dataset, open(data_dir / data_pkl, 'wb'))
     data_train.to_csv(
         data_dir / Path(f'{split_file.name}_train.csv'), index=False)
-    data_val.to_csv(data_dir / Path(f'{split_file.name}_val.csv'), index=False)
+    data_val.to_csv(\
+        data_dir / Path(f'{split_file.name}_val.csv'), index=False)
     data_test.to_csv(
         data_dir / Path(f'{split_file.name}_test.csv'), index=False)
     return dataset
