@@ -10,13 +10,8 @@ from tensormorph import *
 
 # Train and test model using preprocessed data set
 # (see notes on data format), thin wrapper for tensormorph
-# Examples:
+# Example:
 # python 00train_model.py # chamorro -um- infixation
-# python 00train_model.py --data hungarian/hungarian_dat_sg --features one_hot
-# python 00train_model.py --data english/english_un --features one_hot
-# python 00train_model.py --data Marcus1999/marcus_aba --features one_hot --reduplication
-# python 00train_model.py --data synth_redup/data/partial_and_initial_cv_100 --features one_hot --reduplication
-# python 00train_model.py --data unimorph/que_noun --morphosyn unimorph
 
 # Commandline arguments / yaml file specifying data and model specs
 parser = configargparse.ArgParser(
@@ -50,6 +45,17 @@ parser.add(
     choices=['default', 'unimorph'],
     default='default',
     help='morphosyntactic embedder')
+parser.add(
+    '--naffixslot',
+    type=int,
+    default=1,
+    help='number of sequential affixation operations')
+parser.add(
+    '--nmorphbasis',
+    type=int,
+    default=10,
+    help='number of learned basis functions for representation of affix form/end/pivot, etc.'
+)
 parser.add(
     '--dmorphophon',
     type=int,

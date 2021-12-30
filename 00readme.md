@@ -1,21 +1,19 @@
 ## Prepare data:
 
-python 01_prepare_data.py --config <data>.yaml
+python 01_prepare_data.py --config <data_model_config>.yaml
 
-where
+where <data_model_config>.yaml is the \_full\* path to a data+model config file
 
-<data>.yaml is the _full_ path to a data config file (e.g., ../tensormorph_data/chamorro/chamorro_um.yaml)
+Ex. python 01_prepare_data.py --config ../tensormorph_data/chamorro/chamorro_um.yaml
 
 Ex. python 01_prepare_data.py --config ../tensormorph_data/french/french_verbs.yaml
 
 ## Train and evaluate model:
 
-python 02_train_model.py --data <data_dir>/<data_subset>
+python 02_train_model.py --config <data_model_config>.yaml
 
-where
+where <data_model_config>.yaml is the \_full\* path to a data+model config file, as above
 
-<data_dir> is by default a subdirectory of ../tensormorph_data
+Ex. python 02_train_model.py # runs Chamorro -um- simulation by default
 
-<data_dir>/<data_subset>.yaml specifies data and model configs
-
-Ex. python 02_train_model.py --data french/french_verbs --morphosyn unimorph
+Ex. python 02_train_model.py --config ../tensormorph_data/french/french_verbs.yaml

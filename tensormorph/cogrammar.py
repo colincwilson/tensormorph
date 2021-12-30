@@ -28,9 +28,9 @@ class MultiCogrammar(nn.Module):
         self.cogrammar = Cogrammar()
         self.reduplication = False
         self.correspondence = None  # xxx not used
-        self.nslot = 1
+        self.naffixslot = config.naffixslot
         self.Mslot2dim_attn = \
-            Parameter(0.1 * torch.randn(self.nslot * config.ndim))
+            Parameter(0.1 * torch.randn(self.naffixslot * config.ndim))
         #self.sequencer = MorphosynSequencer()
         # xxx experimental
         # xxx add commandline parameter for number of phonological patterns
@@ -63,7 +63,7 @@ class MultiCogrammar(nn.Module):
         #morphospec = torch.stack(morphospec, -1)
         #print(morphospec.shape)
         Mslot2dim_attn = self.Mslot2dim_attn \
-                            .view(config.ndim, self.nslot)
+                            .view(config.ndim, self.naffixslot)
         Mslot2dim_attn = torch.sigmoid(Mslot2dim_attn)
         #Mslot2dim_attn = softmax(Mslot2dim_attn, dim = 0)
         #Mslot2dim_attn = self.sequencer(morphosyn, self.nslot)
@@ -78,7 +78,7 @@ class MultiCogrammar(nn.Module):
 
         # Apply morphological operations
         stem_i = stem
-        for i in range(self.nslot):
+        for i in range(self.naffixslot):
             dim_attn_i = Mslot2dim_attn[..., i]
             ftr_attn_i = dim_attn_i @ Mdim2units.t()
             morphosyn_i = morphosyn * ftr_attn_i.unsqueeze(0)
@@ -97,7 +97,7 @@ class MultiCogrammar(nn.Module):
             stem_i = output_i
         output = output_i
 
-        # Deactivate morphology if requested
+        # Deactivate morphology if requested xxx set naffixslot to zero
         if not config.morphology:
             stem.pivot = torch.zeros(nbatch, config.nrole)
             stem.copy = torch.ones(nbatch, config.nrole)
@@ -128,9 +128,9 @@ class MultiCogrammar(nn.Module):
             #    print(key, val)
             print(f'Mslot2dim_attn')
             print(
-                labeled_tensor(Mslot2dim_attn,
-                               [f'slot{i}' for i in range(self.nslot)],
-                               config.morphosyn_embedder.dims))
+                labeled_tensor(Mslot2dim_attn.t(),
+                               config.morphosyn_embedder.dims,
+                               [f'slot{i}' for i in range(self.naffixslot)]))
             #print(f'alpha0 {alpha0.data[:,0,0]}, alpha1 {alpha1.data[:,0,0]}')
             #np.save(config.save_dir+'/output0.npy', output0.form.data.numpy())
             #print(f'Winhib = {torch.exp(self.sequencer.W)}')
@@ -147,7 +147,8 @@ class Cogrammar(nn.Module):
     def __init__(self):
         super(Cogrammar, self).__init__()
         self.affix_vocab = AffixVocab(
-            dcontext=config.dcontext, daffix=10)  # Affixer()  # Affixer2()
+            dcontext=config.dcontext,
+            daffix=config.naffixbasis)  # Affixer()  # Affixer2()
         self.morph_op = MorphOp()
         self.reduplication = False
         self.correspondence = None  # xxx not used

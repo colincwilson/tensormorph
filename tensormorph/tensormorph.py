@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks.progress.tqdm_progress import TQDMProgressBar
 
 import config
 from phon import config as phon_config
@@ -26,14 +27,14 @@ def init(args):
     Initialize tensormorph model
     """
     # # # # # # # # # #
-    # Load default model options into args
+    # Default model options
     with open('model_config.yaml', 'r') as f:
         args_default = yaml.load(f)
     for key, val in args_default.items():
         if not hasattr(args, key):
             setattr(args, key, val)
 
-    # Load options into config
+    # Global config
     for key, val in vars(args).items():
         setattr(config, key, val)
     if not hasattr(config, 'save_dir'):
@@ -149,7 +150,7 @@ def init(args):
     config.data_test = data_util.MorphDataset(data['data_test'])  # xxx postpone
 
     # # # # # # # # # #
-    # Create grammar
+    # Initialize grammar
     config.grammar = Grammar(
         learning_rate=config.learn_rate,
         reduplication=args.reduplication)  # xxx config
@@ -170,7 +171,6 @@ def train_and_evaluate():
     grammar = config.grammar
     trainer = Trainer(
         logger=False,
-        progress_bar_refresh_rate=1,
         min_epochs=config.min_epochs,
         max_epochs=config.max_epochs,
         gradient_clip_val=config.grad_clip,
@@ -179,6 +179,7 @@ def train_and_evaluate():
         #precision=16, use_amp=False,
         #num_processes = 4, # number of cpus xxx make config option
         gpus=config.gpus,
+        callbacks=TQDMProgressBar(refresh_rate=1),
     )
     trainer.fit(grammar)
 
@@ -192,7 +193,9 @@ def train_and_evaluate():
     evaluate('test')
 
 
-def evaluate(split):  # xxx move testing to grammar module
+def evaluate(split):
+    # xxx move testing to grammar module
+    # xxx incremental embedding
     data = config.data[f'data_{split}']  # raw data
     data_embed = getattr(config, f'data_{split}')
     batch = data_util.morph_batcher(data_embed)

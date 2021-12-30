@@ -11,6 +11,8 @@ phonology: 0
 
 # Morphological representations
 morphosyn: unimorph
+naffixslot: 1
+naffixbasis: 10
 dmorphophon: 0
 
 # Learning
