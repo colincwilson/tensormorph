@@ -29,7 +29,7 @@ def init(args):
     # # # # # # # # # #
     # Default model options
     with open('model_config.yaml', 'r') as f:
-        args_default = yaml.load(f)
+        args_default = yaml.safe_load(f)
     for key, val in args_default.items():
         if not hasattr(args, key):
             setattr(args, key, val)
@@ -201,10 +201,10 @@ def evaluate(split):
     batch = data_util.morph_batcher(data_embed)
 
     #config.decoder.add_noise = False
-    pred = config.grammar(batch)
-    pred = pred._str()
-    data['pred'] = [str_util.remove_delim(x) for x in pred]
-    data['score'] = [int(i) for i in (data['pred'] == data['output'])]
+    output = config.grammar(batch)
+    output = output._str()
+    data['output'] = [str_util.remove_delim(x) for x in output]
+    data['score'] = [int(i) for i in (data['output'] == data['target'])]
     pred_accuracy = data['score'].mean()
     pred_errors = data[(data['score'] == 0)]
     print(f'{split} accuracy: {pred_accuracy} '

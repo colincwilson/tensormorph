@@ -10,7 +10,7 @@
 
 import pickle, re, sys
 from pathlib import Path
-import configargparse, yaml
+import configargparse, json, yaml
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -40,33 +40,35 @@ parser.add(
     '--delim', type=str, default=',', help='delimiter in data file (str)')
 parser.add('--morphosyn', help='default morphosyntactic specification (str)')
 parser.add(
-    '--max_len', type=int, help='maximum length of input/output forms (int)')
+    '--max_len',
+    type=int,
+    help='maximum length of source and target forms (int)')
 parser.add(
     '--split_strings',
     action='store_true',
-    help='split input/output forms into space-separated (bool)')
+    help='split source and target forms into space-separated (bool)')
 parser.add(
     '--lower_strings',
     action='store_true',
-    help='lowercase input/output forms (bool)')
+    help='lowercase source and target forms (bool)')
 parser.add(
     '--substitutions',
-    type=yaml.load,
-    help='symbol substitutions to apply to input/output forms (dict)')
+    type=yaml.safe_load,  #yaml.load,
+    help='symbol substitutions to apply to source and target forms (dict)')
 parser.add(
-    '--held_in_stems',
-    type=yaml.load,
+    '--held_in_source',
+    type=yaml.safe_load,  #yaml.load,
     nargs='+',
-    help='stems necessarily included in the training set (list)')
+    help='sources necessarily included in the training set (list)')
 parser.add(
-    '--held_out_stems',
-    type=yaml.load,
+    '--held_out_source',
+    type=yaml.safe_load,  #yaml.load,
     nargs='+',
-    help='stems necessarily excluded from the training set (list)')
+    help='sources necessarily excluded from the training set (list)')
 parser.add(
     '--vowels',
     required=True,
-    type=yaml.load,
+    type=yaml.safe_load,  #yaml.load,
     nargs='+',
     help='vowel symbols (list)')  # xxx no longer obligatory?
 parser.add(
@@ -95,15 +97,9 @@ print(args)
 
 
 def main():
-    data_dir = Path(args.data_dir) if args.data_dir is not None else Path(
-        args.config).parent
-    #data_dir = Path(args.data_dir) if args.data_dir is not None \
-    #    else Path(args.config).parent
-    #if args.morphosyn is None or args.morphosyn == 'None':
-    #    colnames = ['stem', 'output', 'morphosyn']
-    #else:
-    #    colnames = ['stem', 'output']
-    colnames = ['stem', 'output', 'morphosyn']
+    data_dir = Path(args.data_dir) if args.data_dir is not None \
+        else Path(args.config).parent
+    colnames = ['source', 'target', 'morphosyn']
 
     if args.data_file is not None:
         # Data to be split into train | val | test
@@ -119,8 +115,9 @@ def main():
         for key in colnames:
             data[key] = data[key].str.strip()
         split_flag = True
-        if (data['stem'][0] == 'stem' or data['output'][0] == 'output' or
-                data['morphosyn'][0] == 'morphosyn'):
+        if (data['source'][0] == 'source' \
+            or data['target'][0] == 'target'
+            or data['morphosyn'][0] == 'morphosyn'):
             print('Warning: first row of data appears to be header')
     else:
         # Pre-split train | (val) | test
@@ -167,32 +164,32 @@ def main():
     data = data.dropna(how='all').reset_index(drop=True)
     data = data.drop_duplicates().reset_index(drop=True)
     data.reset_index()
-    max_len = np.max([len(x) for x in data['stem']] +
-                     [len(x) for x in data['output']])
+    max_len = np.max([len(x) for x in data['source']] +
+                     [len(x) for x in data['target']])
     print(data.head())
-    print(f'Maximum input/output length: {max_len}')
+    print(f'Maximum source and target length: {max_len}')
     print()
 
     # Restructure data
     dats = {
-        'stem': [x for x in data['stem']],
-        'output': [x for x in data['output']],
-        'held_in_stems': [],
-        'held_out_stems': []
+        'source': [x for x in data['source']],
+        'target': [x for x in data['target']],
+        'held_in_source': [],
+        'held_out_source': []
     }
 
-    # Collect segments from stems and outputs prior to string ops
+    # Collect segments from source and target forms prior to string ops
     if not args.split_strings:
         segs = segments(dats, args, sep='')
         print(f'Segments: {segs}')
         print()
 
     # Apply string ops
-    if args.held_in_stems is not None:
-        dats['held_in_stems'] = args.held_in_stems
+    if args.held_in_source is not None:
+        dats['held_in_source'] = args.held_in_source
 
-    if args.held_out_stems is not None:
-        dats['held_out_stems'] = args.held_out_stems
+    if args.held_out_source is not None:
+        dats['held_out_source'] = args.held_out_source
 
     if args.split_strings:
         for key, val in dats.items():
@@ -210,28 +207,29 @@ def main():
                 dats[key] = [re.sub(s, r, x) for x in val]
         print()
 
-    data['stem'] = dats['stem']
-    data['output'] = dats['output']
-    data['stem_len'] = [len(x.split()) for x in dats['stem']]
-    data['output_len'] = [len(x.split()) for x in dats['output']]
+    data['source'] = dats['source']
+    data['target'] = dats['target']
+    data['source_len'] = [len(x.split()) for x in dats['source']]
+    data['target_len'] = [len(x.split()) for x in dats['target']]
 
     # Subset data by max length parameter
     if args.max_len is not None:
         max_len = args.max_len
-        data = data[((data.stem_len <= max_len) & (data.output_len <= max_len))]
+        data = data[((data.source_len <= max_len) &
+                     (data.target_len <= max_len))]
         data.reset_index()
-        #data = data.drop(['stem_len', 'output_len'], axis=1)
+        #data = data.drop(['source_len', 'target_len'], axis=1)
 
     # Index entries
     data['idx'] = range(len(data))
 
     # Report data
-    print(f'Number of unique stem-output pairs: {len(data)}')
+    print(f'Number of unique source-target pairs: {len(data)}')
     print(data.head())
     print(data.tail())
     print()
 
-    # Collect segments from stems and outputs
+    # Collect segments from source and target forms
     segs = segments(data, args)
     print(f'Segments in the modified data: {segs}')
     print()
@@ -239,8 +237,8 @@ def main():
     # Dataset prior to split
     dataset = {
         'data': data,
-        'held_in_stems': dats['held_in_stems'],
-        'held_out_stems': dats['held_out_stems'],
+        'held_in_source': dats['held_in_source'],
+        'held_out_source': dats['held_out_source'],
         'segments': segs,
         'vowels': args.vowels,
         'max_len': max_len
@@ -294,14 +292,14 @@ def main():
 
 def segments(data, args, sep=' '):
     """
-    Unique segments in stem or output
+    Unique segments in source and target forms
     """
     vowels = args.vowels
     segments = set(vowels)
-    for stem in data['stem']:
-        segments |= set(stem.split(sep)) if sep != '' else set(stem)
-    for output in data['output']:
-        segments |= set(output.split(sep)) if sep != '' else set(output)
+    for source in data['source']:
+        segments |= set(source.split(sep)) if sep != '' else set(source)
+    for target in data['target']:
+        segments |= set(target.split(sep)) if sep != '' else set(target)
     segments = [x for x in segments]
     segments.sort()
     return (segments)
@@ -309,23 +307,23 @@ def segments(data, args, sep=' '):
 
 def split_data(dataset, data_prop, val_prop, test_prop):
     """
-    Random split into train/val/test, handling held_in/out_stems
+    Random split into train/val/test, handling held_in/held_out examples
     """
     data = dataset['data']
-    held_in_stems = dataset['held_in_stems']
-    held_out_stems = dataset['held_out_stems']
+    held_in_source = dataset['held_in_source']
+    held_out_source = dataset['held_out_source']
 
     # Remove held_in and held_out prior to random split
-    if held_in_stems is not None:
-        held_in = data[(data['stem'].isin(held_in_stems))].\
+    if held_in_source is not None:
+        held_in = data[(data['source'].isin(held_in_source))].\
                     reset_index(drop = True)
-        data = data[~(data['stem'].isin(held_in_stems))].\
+        data = data[~(data['source'].isin(held_in_source))].\
                     reset_index(drop = True)
 
-    if held_out_stems is not None:
-        held_out = data[(data['stem'].isin(held_out_stems))].\
+    if held_out_source is not None:
+        held_out = data[(data['source'].isin(held_out_source))].\
                     reset_index(drop = True)
-        data = data[~(data['stem'].isin(held_out_stems))].\
+        data = data[~(data['source'].isin(held_out_source))].\
                     reset_index(drop = True)
 
     # Subset data before splitting
@@ -344,11 +342,11 @@ def split_data(dataset, data_prop, val_prop, test_prop):
         train_test_split(data_nontrain, test_size = test_size)
 
     # Combine held_in and held_out with splits
-    if held_in_stems is not None:
+    if held_in_source is not None:
         data_train = pd.concat([held_in, data_train]).\
                     reset_index(drop = True)
 
-    if held_out_stems is not None:
+    if held_out_source is not None:
         data_test = pd.concat([held_out, data_test]).\
                     reset_index(drop = True)
 

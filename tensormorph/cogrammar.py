@@ -11,7 +11,7 @@ from affix_vocab import AffixVocab
 from truncater import BiTruncater
 from matcher import Matcher3, EndMatcher3
 from phonology import Phonology
-from morphosyn_sequencer import MorphosynSequencer
+#from morphosyn_sequencer import MorphosynSequencer
 #from phonology import PhonoRules, PhonoRule
 #from torch.nn import LayerNorm
 #from torch.distributions.continuous_bernoulli import ContinuousBernoulli
@@ -20,7 +20,7 @@ from morphosyn_sequencer import MorphosynSequencer
 
 class MultiCogrammar(nn.Module):
     """
-    Apply sequence of affixation operations.
+    Apply a sequence of affixation operations to base.
     """
 
     def __init__(self):  # xxx specify number of cogrammars
@@ -53,8 +53,8 @@ class MultiCogrammar(nn.Module):
         #    nn.Linear(config.ndim, self.nslot * config.ndim),
         #    nn.Sigmoid() )
 
-    def forward(self, stem, morphosyn, max_len):
-        nbatch = stem.form.shape[0]
+    def forward(self, base, morphosyn, max_len):
+        nbatch = base.form.shape[0]
         #dim2embed = config.morphosyn_embedder.dim2embed
         Mdim2units = config.morphosyn_embedder.Mdim2units
         #morphosyn_zeros = [dim2embed[dim][:, 0] for dim in dim2embed.keys()]
@@ -77,7 +77,7 @@ class MultiCogrammar(nn.Module):
         #self.cogrammar.affixer.reset(nbatch)
 
         # Apply morphological operations
-        stem_i = stem
+        base_i = base
         for i in range(self.naffixslot):
             dim_attn_i = Mslot2dim_attn[..., i]
             ftr_attn_i = dim_attn_i @ Mdim2units.t()
@@ -88,24 +88,24 @@ class MultiCogrammar(nn.Module):
             #    for j in range(config.ndim)
             #]
             #morphosyn_i = morphosyn
-            output_i = self.cogrammar(stem_i, morphosyn_i, max_len)
+            output_i = self.cogrammar(base_i, morphosyn_i, max_len)
 
             #if config.recorder is not None:
-            #    self.trace['stem_str'] = self.cogrammar.stem._str()[0]
+            #    self.trace['base_str'] = self.cogrammar.base._str()[0]
             #    self.trace['affix_str'] = self.cogrammar.affix._str()[0]
             #    self.trace['output_str'] = self.cogrammar.output._str()[0]
-            stem_i = output_i
+            base_i = output_i
         output = output_i
 
         # Deactivate morphology if requested xxx set naffixslot to zero
         if not config.morphology:
-            stem.pivot = torch.zeros(nbatch, config.nrole)
-            stem.copy = torch.ones(nbatch, config.nrole)
+            base.pivot = torch.zeros(nbatch, config.nrole)
+            base.copy = torch.ones(nbatch, config.nrole)
             output = Morph(
-                form=stem.form.clone(),
-                form_str=stem.form_str,
-                pivot=stem.pivot.clone(),
-                copy=stem.copy.clone())
+                form=base.form.clone(),
+                form_str=base.form_str,
+                pivot=base.pivot.clone(),
+                copy=base.copy.clone())
 
         # Apply phonology to output of morphology [experimental]
         if self.phonology is not None:
@@ -121,7 +121,7 @@ class MultiCogrammar(nn.Module):
 
         # xxx use trace dict
         if config.recorder is not None:
-            self.stem = stem  # self.cogrammar.stem
+            self.base = base  # self.cogrammar.base
             self.affix = self.cogrammar.affix
             self.output = output  # xxx self.cogrammar.output
             #for key, val in self.trace.items():
@@ -141,7 +141,8 @@ class MultiCogrammar(nn.Module):
 
 class Cogrammar(nn.Module):
     """
-    Apply single affixation operation.
+    Apply a single affixation operation to a base.
+    todo: apply truncation before affixation
     """
 
     def __init__(self):
@@ -173,19 +174,14 @@ class Cogrammar(nn.Module):
             self.morphophon1 = None
             self.w_mphon = 1.0
 
-    def forward(self, stem, morphosyn, max_len):
-        """
-        Map stem to affixed output
-        todo: apply truncation before affixation
-        """
-
-        # Morphophonology of stem
-        nbatch = stem.form.shape[0]
+    def forward(self, base, morphosyn, max_len):
+        # Morphophonology of base
+        nbatch = base.form.shape[0]
         if self.morphophon1 is not None:
-            x, (h_n, c_n) = self.morphophon1(stem.form.transpose(1, 2))
+            x, (h_n, c_n) = self.morphophon1(base.form.transpose(1, 2))
             mphon = h_n[0]
             context = torch.stack([morphosyn, mphon], -1)
-            #mphon = self.morphophon1(stem.form, torch.zeros(nbatch, 1))
+            #mphon = self.morphophon1(base.form, torch.zeros(nbatch, 1))
             #mphon = self.morphophon2(mphon)
         else:
             mphon = torch.zeros((nbatch, config.dmorphophon),
@@ -193,16 +189,16 @@ class Cogrammar(nn.Module):
             context = morphosyn
 
         # Affixation operation
-        stem, affix, p_zero = self.affix_vocab(stem, context)
-        output = self.morph_op(stem, affix)
+        base, affix, p_zero = self.affix_vocab(base, context)
+        output = self.morph_op(base, affix)
 
         # Zero affixation (similar to highway connection)
         #output.form = (1.0 - p_zero) * output.form + \
-        #              p_zero * stem.form
+        #              p_zero * base.form
 
         # xxx use trace dict
         if config.recorder is not None:
-            self.stem = stem
+            self.base = base
             self.affix = affix
             self.output = output
             #if self.morphophon is not None:

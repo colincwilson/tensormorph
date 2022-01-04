@@ -37,8 +37,8 @@ class PositionPivoter(nn.Module):
         #    self.context2w.weight.detach_()
         self.parser = SyllableParser()
 
-    def forward(self, Stem, W=None):
-        form = Stem.form
+    def forward(self, base, W=None):
+        form = base.form
         nbatch = form.shape[0]
 
         # Parse form up to syllable level
@@ -90,10 +90,10 @@ class PositionPivoter(nn.Module):
 
     # # # # # Deprecated # # # # #
 
-    def forward1(self, Stem, context):
+    def forward1(self, base, context):
         #form = distrib2local(stem.form)
         #mask = hardtanh0(form[:,0,:])
-        form = Stem.form
+        form = base.form
         nbatch = form.shape[0]
 
         # Parse form up to syllable level

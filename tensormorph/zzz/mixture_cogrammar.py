@@ -3,7 +3,7 @@
 import config
 from tpr import *
 from morph import MorphOp, Morph
-from affixer import AffixVocab
+from affix_vocab import AffixVocab
 #from stem_modifier import StemModifier
 from birnn_pivoter import BiRNNPivoter
 from truncater import BiTruncater

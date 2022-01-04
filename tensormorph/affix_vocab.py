@@ -46,7 +46,7 @@ class AffixVocab(nn.Module):
             nn.Sigmoid(), \
             nn.Linear(daffix, max_affix_len))
 
-        # Map from context to stem pivot logits
+        # Map from context to src pivot logits
         self.context2pivot = nn.Sequential( \
             nn.Linear(dcontext, daffix), \
             nn.Sigmoid(), \
@@ -54,8 +54,8 @@ class AffixVocab(nn.Module):
 
         self.trace = None
 
-    def forward(self, Stem, context):
-        nbatch = Stem.form.shape[0]
+    def forward(self, base, context):
+        nbatch = base.form.shape[0]
         max_affix_len = self.max_affix_len
         #print(nbatch, max_affix_len)
 
@@ -85,25 +85,25 @@ class AffixVocab(nn.Module):
              torch.ones(nbatch, config.nrole - max_affix_len)], -1)
 
         # Affix morph
-        Affix = Morph(
+        affix = Morph(
             form=affix_form,  # local2distrib(affix_form)
             copy=affix_copy,
             pivot=affix_pivot)
 
-        # Stem TPR (real-valued)
-        Stem.form = Stem.form
-        Stem.copy = torch.ones(
+        # Base TPR (real-valued)
+        base.form = base.form
+        base.copy = torch.ones(
             nbatch, config.nrole,
-            device=config.device)  # xxx enforce full stem copy
+            device=config.device)  # xxx enforce full base copy
 
-        # Stem pivot
+        # Base pivot
         W = self.context2pivot(context)
         A = softmax(W, dim=-1)
-        pivots = self.pivoter(Stem)
-        stem_pivot = einsum('bp,bpr->br', A,
+        pivots = self.pivoter(base)
+        base_pivot = einsum('bp,bpr->br', A,
                             pivots)  # pivots.transpose(1,2) @ A
-        #stem_pivot = (1.0 - zero) * stem_pivot
-        Stem.pivot = stem_pivot
+        #base_pivot = (1.0 - zero) * base_pivot
+        base.pivot = base_pivot
 
         # Trace (pivot selection)
         if config.recorder is not None:
@@ -111,7 +111,7 @@ class AffixVocab(nn.Module):
             self.A = A
             self.pivots = pivots
 
-        return Stem, Affix, None
+        return base, affix, None
 
     def init(self):
         pass
