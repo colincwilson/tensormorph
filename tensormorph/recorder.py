@@ -212,7 +212,7 @@ def labeled_tensor(M, col_names, row_names):
     Convert 2D tensor to labeled data frame
     xxx todo: also label 1D tensors
     """
-    M = pd.DataFrame(M.data.numpy(), columns=col_names, index=row_names)
+    M = pd.DataFrame(M.cpu().data.numpy(), columns=col_names, index=row_names)
     return M
 
 

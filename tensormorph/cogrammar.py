@@ -30,7 +30,7 @@ class MultiCogrammar(nn.Module):
         self.correspondence = None  # xxx not used
         self.naffixslot = config.naffixslot
         self.Mslot2dim_attn = \
-            Parameter(0.1 * torch.randn(self.naffixslot * config.ndim))
+            Parameter(0.1 * torch.randn(self.naffixslot * config.ndim, device=config.device))
         #self.sequencer = MorphosynSequencer()
         # xxx experimental
         # xxx add commandline parameter for number of phonological patterns

@@ -51,8 +51,12 @@ class PositionPivoter(nn.Module):
 
         # Assemble pivots (see syllable parser for element indices)
         pivots = [
-            torch.zeros(nbatch, 1, config.nrole,
-                        requires_grad=False),  # No pivot
+            torch.zeros(
+                nbatch,
+                1,
+                config.nrole,
+                requires_grad=False,
+                device=config.device),  # No pivot
             after_first[:, 0].unsqueeze(1),  # After first ⋊
             # before_last[:,1].unsqueeze(1),        # Before last ⋉
             before_first[:, 1].unsqueeze(1),  # Before first ⋉
@@ -106,8 +110,12 @@ class PositionPivoter(nn.Module):
 
         # Assemble pivots (see syllable parser for element indices)
         pivots = [
-            torch.zeros(nbatch, 1, config.nrole,
-                        requires_grad=False),  # No pivot
+            torch.zeros(
+                nbatch,
+                1,
+                config.nrole,
+                requires_grad=False,
+                device=config.device),  # No pivot
             first[:, 0].unsqueeze(1),  # After first ⋊
             # before_last[:,1].unsqueeze(1),        # Before last ⋉
             before_first[:, 1].unsqueeze(1),  # Before first ⋉

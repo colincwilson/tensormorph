@@ -67,22 +67,30 @@ class AffixVocab(nn.Module):
         affix_form = affix_form.view(nbatch, config.dsym, max_affix_len)
         affix_form = torch.cat([
             affix_form,
-            torch.zeros(nbatch, config.dsym, config.nrole - max_affix_len)
+            torch.zeros(
+                nbatch,
+                config.dsym,
+                config.nrole - max_affix_len,
+                device=config.device)
         ], -1)
 
         # Affix copy
         affix_copy = self.context2copy(context)
         affix_copy = sigmoid(affix_copy)
-        affix_copy = torch.cat(
-            [affix_copy,
-             torch.zeros(nbatch, config.nrole - max_affix_len)], -1)
+        affix_copy = torch.cat([
+            affix_copy,
+            torch.zeros(
+                nbatch, config.nrole - max_affix_len, device=config.device)
+        ], -1)
 
         # Affix end/pivot
         affix_pivot = self.context2end(context)
         affix_pivot = softmax(affix_pivot, dim=-1)
-        affix_pivot = torch.cat(
-            [affix_pivot,
-             torch.ones(nbatch, config.nrole - max_affix_len)], -1)
+        affix_pivot = torch.cat([
+            affix_pivot,
+            torch.ones(
+                nbatch, config.nrole - max_affix_len, device=config.device)
+        ], -1)
 
         # Affix morph
         affix = Morph(

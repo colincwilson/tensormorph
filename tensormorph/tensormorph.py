@@ -4,6 +4,7 @@ import pickle, yaml, sys
 from pathlib import Path
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks.progress.tqdm_progress import TQDMProgressBar
 
@@ -13,6 +14,7 @@ from phon import features as phon_features
 from phon import str_util
 import morph
 import data_util
+from data_util import morph_batcher
 from form_embedder import FormEmbedder
 from morphosyn_embedder import UnimorphEmbedder, DefaultEmbedder, OneHotEmbedder
 from decoder import Decoder  #, LocalistAlignmentDecoder
@@ -40,7 +42,7 @@ def init(args):
     if not hasattr(config, 'save_dir'):
         config.save_dir = str(Path.home() / 'Desktop/tmorph_output')
     if not hasattr(config, 'data_name'):
-        config.data_name = config.data_pkl
+        config.data_name = Path(config.data_pkl).stem
     if config.gpus > 0:
         config.device = torch.device('cuda:0')
     else:
@@ -194,16 +196,27 @@ def train_and_evaluate():
 
 
 def evaluate(split):
-    # xxx move testing to grammar module
-    # xxx incremental embedding
-    data = config.data[f'data_{split}']  # raw data
-    data_embed = getattr(config, f'data_{split}')
-    batch = data_util.morph_batcher(data_embed)
+    # Data subset (as data frame and data loader)
+    data = config.data[f'data_{split}']
+    data_loader = DataLoader(
+        getattr(config, f'data_{split}'),
+        batch_size=128,
+        shuffle=False,
+        collate_fn=morph_batcher)
 
-    #config.decoder.add_noise = False
-    output = config.grammar(batch)
-    output = output._str()
-    data['output'] = [str_util.remove_delim(x) for x in output]
+    # Predicted outputs (strings)
+    output_str = []
+    for batch in data_loader:
+        for k, v in batch.items():
+            try:
+                batch[k] = v.to(config.device)
+            except:
+                pass
+        output = config.grammar(batch)
+        output_str += output._str()
+
+    # Write results
+    data['output'] = [str_util.remove_delim(x) for x in output_str]
     data['score'] = [int(i) for i in (data['output'] == data['target'])]
     pred_accuracy = data['score'].mean()
     pred_errors = data[(data['score'] == 0)]

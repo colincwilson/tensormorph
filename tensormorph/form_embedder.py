@@ -127,7 +127,7 @@ class FormEmbedder():
         copy_thresh = 0.5
         pivot_thresh = 0.25
         if 'copy' in markup and markup['copy'] is not None:
-            copy = markup['copy'].data.numpy()
+            copy = markup['copy'].cpu().data.numpy()
             for i in range(nbatch):
                 syms_i = [
                     f'⟨{sym}⟩' if copy[i][j] < copy_thresh else sym
@@ -135,7 +135,7 @@ class FormEmbedder():
                 ]
                 y[i] = ' '.join(syms_i)
         if 'pivot' in markup and markup['pivot'] is not None:
-            pivot = markup['pivot'].data.numpy()
+            pivot = markup['pivot'].cpu().data.numpy()
             for i in range(nbatch):  # • or ●
                 syms_i = [
                     f'{sym} •' if pivot[i][j] > pivot_thresh else sym
