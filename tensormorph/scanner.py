@@ -53,10 +53,12 @@ def propagate(X, direction='both', inclusive=True, mask=None, eps=1.0e-8):
     # todo: apply to unrestricted inputs?
     # todo: use logcumsumexp
     """
-    assert np.all((0.0 <= X.data.numpy()) & (X.data.numpy() <= 1.0)), \
+    assert np.all((0.0 <= X.cpu().data.numpy()) \
+                & (X.cpu().data.numpy() <= 1.0)), \
         print('Error in propogate: X out of domain')
     if mask is not None:
-        assert np.all((0.0 <= mask.data.numpy()) & (mask.data.numpy() <= 1.0)),\
+        assert np.all((0.0 <= mask.cpu().data.numpy()) \
+                    & (mask.cpu().data.numpy() <= 1.0)),\
             print('Error in propogate: mask out of domain')
 
     Y = apply_mask(X, mask)
@@ -84,10 +86,12 @@ def inhibit(X, direction='both', mask=None, eps=1.0e-8):
     # todo: apply to unrestricted inputs?
     todo: use logcumsumexp
     """
-    assert np.all((0.0 <= X.data.numpy()) & (X.data.numpy() <= 1.0)), \
+    assert np.all((0.0 <= X.cpu().data.numpy()) \
+                & (X.cpu().data.numpy() <= 1.0)), \
         print('Error in inhibit: X out of domain')
     if mask is not None:
-        assert np.all((0.0 <= mask.data.numpy()) & (mask.data.numpy() <= 1.0)), \
+        assert np.all((0.0 <= mask.cpu().data.numpy()) \
+                    & (mask.cpu().data.numpy() <= 1.0)), \
             print('Error in inhibit: mask out of domain')
 
     Y = apply_mask(X, mask)

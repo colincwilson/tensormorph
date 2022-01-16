@@ -40,7 +40,7 @@ def bdot(X, Y):
     [https://discuss.pytorch.org/t/dot-product-batch-wise/9746/11]
     """
     #Z = (X * Y).sum(-1, keepdim=True)
-    Z = einsum('bi,bi->b', X, Y).unsqueeze(-1)
+    Z = einsum('b i, b i -> b', X, Y).unsqueeze(-1)
     #print(X.shape, Y.shape, Z.shape); sys.exit(0)
     return Z
 

@@ -36,28 +36,28 @@ class MorphDatapoint(dict):
     """
 
     def __init__(self, ex):
-        idx, stem, output, morphosyn = \
-            ex['idx'], ex['stem'], ex['output'], ex['morphosyn']
-        stem_len, output_len = \
-            ex['stem_len'], ex['output_len']
+        idx, source, target, morphosyn = \
+            ex['idx'], ex['source'], ex['target'], ex['morphosyn']
+        source_len, target_len = \
+            ex['source_len'], ex['target_len']
         form_embedder = config.form_embedder
         morphosyn_embedder = config.morphosyn_embedder
 
         try:
-            stem_str = str_util.add_delim(stem)
-            stem = form_embedder.string2tpr(stem_str, delim=False)
+            source_str = str_util.add_delim(source)
+            source = form_embedder.string2tpr(source_str, delim=False)
         except Exception as e:
-            print(f'Error embedding stem {stem_str}')
+            print(f'Error embedding source {source_str}')
             print(e)
             sys.exit(0)
 
         try:
-            output_str = str_util.add_delim(output)
-            output = form_embedder.string2tpr(output_str, delim=False)
-            output_id, _ = form_embedder.string2idvec(
-                output_str, delim=False, pad=True)
+            target_str = str_util.add_delim(target)
+            target = form_embedder.string2tpr(target_str, delim=False)
+            target_id, _ = form_embedder.string2idvec(
+                target_str, delim=False, pad=True)
         except Exception as e:
-            print(f'Error embedding output {output_str}')
+            print(f'Error embedding target {target_str}')
             print(e)
             sys.exit(0)
 
@@ -73,13 +73,13 @@ class MorphDatapoint(dict):
             self,
             {
                 'idx': idx,
-                'stem': stem,
-                'stem_str': stem_str,
-                'stem_len': stem_len,
-                'output': output,
-                'output_id': output_id,
-                'output_str': output_str,
-                'output_len': output_len,
+                'source': source,
+                'source_str': source_str,
+                'source_len': source_len,
+                'target': target,
+                'target_id': target_id,
+                'target_str': target_str,
+                'target_len': target_len,
                 'morphosyn': morphosyn,
                 'morphosyn_str': morphosyn_str,
                 #'morphospec': morphospec,
@@ -91,33 +91,33 @@ def morph_batcher(batch):
     collate_fn for list of MorphDatapoints
     """
     idx = torch.LongTensor([ex['idx'] for ex in batch])
-    stem = torch.stack([ex['stem'] for ex in batch], 0)
-    output_id = torch.stack([ex['output_id'] for ex in batch], 0)
-    output = torch.stack([ex['output'] for ex in batch], 0)
+    source = torch.stack([ex['source'] for ex in batch], 0)
+    target_id = torch.stack([ex['target_id'] for ex in batch], 0)
+    target = torch.stack([ex['target'] for ex in batch], 0)
     morphosyn = torch.stack([ex['morphosyn'] for ex in batch], 0)
-    stem_str = [ex['stem_str'] for ex in batch]
-    output_str = [ex['output_str'] for ex in batch]
+    source_str = [ex['source_str'] for ex in batch]
+    target_str = [ex['target_str'] for ex in batch]
     morphosyn_str = [ex['morphosyn_str'] for ex in batch]
-    stem_len = torch.LongTensor([ex['stem_len'] + 2 for ex in batch])
-    output_len = torch.LongTensor([ex['output_len'] + 2 for ex in batch])
-    max_len = np.max(stem_len.numpy() + output_len.numpy())
+    source_len = torch.LongTensor([ex['source_len'] + 2 for ex in batch])
+    target_len = torch.LongTensor([ex['target_len'] + 2 for ex in batch])
+    max_len = np.max(source_len.numpy() + target_len.numpy())
     batch = {
         'idx':
             idx,
-        'stem_str':
-            stem_str,
-        'output_str':
-            output_str,
+        'source_str':
+            source_str,
+        'target_str':
+            target_str,
         'morphosyn_str':
             morphosyn_str,
-        'stem':
-            Morph(form=stem, form_str=stem_str, length=stem_len),
-        'output':
+        'source':
+            Morph(form=source, form_str=source_str, length=source_len),
+        'target':
             Morph(
-                form=output,
-                form_id=output_id,
-                form_str=output_str,
-                length=output_len),
+                form=target,
+                form_id=target_id,
+                form_str=target_str,
+                length=target_len),
         'morphosyn':
             morphosyn,
         #'morphospec': morphospec,
@@ -133,20 +133,20 @@ def morph_batcher(batch):
 
 
 def subset_data(dataset,
-                stem_regex=None,
-                output_regex=None,
+                source_regex=None,
+                target_regex=None,
                 morphosyn_regex=None):
     """
-    Extract data subset defined by regexes on stem / output / morphosyn
+    Extract data subset defined by regexes on source / target / morphosyn
     (applied conjunctively to raw data prior to embedding)
     """
     dat1 = dataset['dat']
-    if stem_regex is not None:
-        dat1 = dat1[dat1.stem.str.match(stem_regex)].\
+    if source_regex is not None:
+        dat1 = dat1[dat1.source.str.match(source_regex)].\
                 reset_index(drop = True)
         #print(stem_regex, len(dat1))
-    if output_regex is not None:
-        dat1 = dat1[dat1.output.str.match(output_regex)].\
+    if target_regex is not None:
+        dat1 = dat1[dat1.target.str.match(target_regex)].\
                 reset_index(drop = True)
         #print(output_regex, len(dat1))
     if morphosyn_regex is not None:

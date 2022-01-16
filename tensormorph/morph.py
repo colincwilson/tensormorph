@@ -19,34 +19,34 @@ class MorphOp(nn.Module):
     def __init__(self):
         super(MorphOp, self).__init__()
         self.morph_indx = None  # soft index to stem (0) or affix (1)
-        self.stem_posn = None  # soft scalar positions within stem,
+        self.base_posn = None  # soft scalar position within base,
         self.affix_posn = None  # affix,
         self.output_posn = None  # output
         self.trace = None
 
-    def forward(self, stem, affix):
+    def forward(self, base, affix):
         """
         Map stem and affix morphs to output morph
         """
-        output = self.reset(stem, affix)
-        morph_indx, stem_posn, affix_posn, output_posn = \
-            self.morph_indx, self.stem_posn, \
+        output = self.reset(base, affix)
+        morph_indx, base_posn, affix_posn, output_posn = \
+            self.morph_indx, self.base_posn, \
             self.affix_posn, self.output_posn
 
         for t in range(config.nrole + 6):  # xxx ndecode
             # Map scalar morph index to morph attention
             morph_attn = config.morph_attender(morph_indx)
-            stem_attn, affix_attn = morph_attn.chunk(chunks=2, dim=-1)
+            base_attn, affix_attn = morph_attn.chunk(chunks=2, dim=-1)
             morph_state = {'morph_indx': morph_indx, 'morph_attn': morph_attn}
 
             # Read filler, pivot, copy from stem, affix
-            stem_state = self.read(stem, stem_posn)
+            base_state = self.read(base, base_posn)
             affix_state = self.read(affix, affix_posn)
 
             # Convex combo of filler and copy from stem, affix
-            fill = stem_attn * stem_state['filler'] \
+            fill = base_attn * base_state['filler'] \
                     + affix_attn * affix_state['filler']
-            copy = stem_attn * stem_state['copy'] \
+            copy = base_attn * base_state['copy'] \
                     + affix_attn * affix_state['copy']
 
             # Write to output
@@ -54,17 +54,17 @@ class MorphOp(nn.Module):
                 self.write(output, output_posn, fill, copy)
 
             # Trace internal processing
-            self.update_trace(morph_state, stem_state, affix_state,
+            self.update_trace(morph_state, base_state, affix_state,
                               output_state)
 
             # Update scalar morph index, switching at pivots
             morph_indx = morph_indx \
-                + stem_attn * stem_state['pivot'] \
+                + base_attn * base_state['pivot'] \
                 - affix_attn * affix_state['pivot']
 
             # Update scalar positions within morphs,
             # advancing in fractions of unit steps
-            stem_posn = stem_posn + stem_attn * 1.0
+            base_posn = base_posn + base_attn * 1.0
             affix_posn = affix_posn + affix_attn * 1.0
             output_posn = output_posn + copy * 1.0
 
@@ -119,16 +119,16 @@ class MorphOp(nn.Module):
 
         return state
 
-    def reset(self, stem, affix):
+    def reset(self, base, affix):
         """
         Initialize/reset output, morph_indx, morph posns, trace 
         """
-        nbatch = stem.form.shape[0]
+        nbatch = base.form.shape[0]
         output_form = torch.zeros((nbatch, config.dsym, config.nrole),
                                   requires_grad=True,
                                   device=config.device)
         output = Morph(output_form)
-        for x in ['morph_indx', 'stem_posn', 'affix_posn', 'output_posn']:
+        for x in ['morph_indx', 'base_posn', 'affix_posn', 'output_posn']:
             setattr(
                 self, x,
                 torch.zeros((nbatch, 1),
@@ -141,7 +141,7 @@ class MorphOp(nn.Module):
         #setattr(self, 'affix_posn', affix.begin)
         return output
 
-    def update_trace(self, morph_state, stem_state, affix_state, output_state):
+    def update_trace(self, morph_state, base_state, affix_state, output_state):
         """
         Trace internal processing for debugging / visualization
         """
@@ -149,8 +149,8 @@ class MorphOp(nn.Module):
             self.trace = {}
         trace = self.trace
         for (prefix,
-             d) in zip(['', 'stem_', 'affix_', 'output_'],
-                       [morph_state, stem_state, affix_state, output_state]):
+             d) in zip(['', 'base_', 'affix_', 'output_'],
+                       [morph_state, base_state, affix_state, output_state]):
             for key, val in d.items():
                 key = prefix + key
                 if key not in trace:

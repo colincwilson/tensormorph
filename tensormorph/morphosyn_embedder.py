@@ -91,8 +91,12 @@ class UnimorphEmbedder(MorphosynEmbedder):
 
         # Matrix mapping each dimensions to its embedding units,
         # and matrix mapping each dimension to its unspecified vector
-        Mdim2units = torch.zeros((dmorphosyn, ndim), requires_grad=False)
-        Mdim2unspec = torch.zeros((dmorphosyn, ndim), requires_grad=False)
+        Mdim2units = torch.zeros((dmorphosyn, ndim),
+                                 requires_grad=False,
+                                 device=config.device)
+        Mdim2unspec = torch.zeros((dmorphosyn, ndim),
+                                  requires_grad=False,
+                                  device=config.device)
         n_total = 0
         for j, dim in enumerate(dims):
             n = len(dim2labels[dim])
@@ -181,7 +185,7 @@ class HebrewEmbedder(MorphosynEmbedder):
             'person': ['E', 'FIRST', 'SECOND', 'THIRD'],\
             'gender': ['E', 'F', 'M', 'MF'],\
             'number': ['E', 'PLURAL', 'SINGULAR'],\
-            'complete': ['COMPLETE', 'MISSING']                                    \
+            'complete': ['COMPLETE', 'MISSING']                                         \
         }
         dims = ['tense', 'person', 'gender', 'number', 'complete']
         val2dim = {y: x for x in dim2vals for y in dim2vals[x]}
@@ -222,7 +226,7 @@ class HindiEmbedder(MorphosynEmbedder):
         dim2labels = {\
             'case': ['direct', 'oblique', 'vocative'],\
             'number': ['singular', 'plural'],\
-            'gender': ['masculine', 'feminine', 'neuter']                                    \
+            'gender': ['masculine', 'feminine', 'neuter']                                         \
         }
         dims = ['case', 'number', 'gender']
         label2dim = {y: x for x in dim2labels for y in dim2labels[x]}

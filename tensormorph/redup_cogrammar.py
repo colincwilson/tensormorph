@@ -7,10 +7,11 @@ from cogrammar import Cogrammar
 from birnn_pivoter import BiRNNPivoter
 #from phonology import PhonoRules, PhonoRule
 from correspondence import BiCorrespondence
-from affixer import AffixVocab  # xxx spurious
+from affix_vocab import AffixVocab  # xxx spurious
 
 
 class RedupCogrammar(nn.Module):
+    # xxx todo: rename stem -> base
 
     def __init__(self):
         super(RedupCogrammar, self).__init__()
@@ -23,7 +24,9 @@ class RedupCogrammar(nn.Module):
         #self.phono_rules = PhonoRule('final_a_raising') #PhonoRules(config.dmorphosyn+2)
         self.correspondence = BiCorrespondence()
         self.reduplication = True  # xxx needed by recorder
-        self.affixer = Affixer(1, False)  # xxx needed by recorder
+        self.affix_vocab = AffixVocab(
+            dcontext=config.dcontext,
+            daffix=config.naffixbasis)  # xxx needed by recorder
 
         # xxx test init
         #self.pivoter.init(ftr='end', before=True, bias=10.0, clamp=True)

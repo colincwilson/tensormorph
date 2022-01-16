@@ -78,8 +78,8 @@ class SyllableParser(nn.Module):
 
         assert not np.any(np.isnan(parse.cpu().data.numpy())), \
                 f'parse value is nan {parse}'
-        assert np.all((parse.data.numpy() >= 0.0) &
-                      (np.all(parse.data.numpy() <= 1.0))), \
+        assert np.all((parse.cpu().data.numpy() >= 0.0) &
+                      (np.all(parse.cpu().data.numpy() <= 1.0))), \
                 f'parse value outside [0,1] {parse}'
 
         return parse

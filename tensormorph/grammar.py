@@ -5,7 +5,7 @@ from tpr import *
 from morph import *
 from radial_basis import GaussianPool
 from decoder import Decoder
-import cogrammar, redup_cogrammar, mixture_cogrammar
+import cogrammar  #redup_cogrammar
 from data_util import morph_batcher
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
@@ -48,19 +48,19 @@ class Grammar(pl.LightningModule):
         assign_node_names(self, None, 'root')  # xxx necessary?
 
     def forward(self, batch):
-        stem, morphosyn, max_len = \
-            batch['stem'], batch['morphosyn'], batch['max_len']
-        pred = self.cogrammar(stem, morphosyn, max_len)
-        return pred
+        source, morphosyn, max_len = \
+            batch['source'], batch['morphosyn'], batch['max_len']
+        output = self.cogrammar(source, morphosyn, max_len)
+        return output
 
     def training_step(self, batch, batch_nb):
-        batch['pred'] = self.forward(batch)
-        loss, losses = self.loss_func(batch['pred'], batch['output'])
+        batch['output'] = self.forward(batch)
+        loss, losses = self.loss_func(batch['output'], batch['target'])
         # xxx alternative euclidean loss, endogenous to tprs,
         # xxx effective only with distributed roles
-        # nbatch = batch['pred'].form.shape[0]
-        #dist = sqeuclid_batch1(batch['pred'].form.view(nbatch, -1),
-        #                         batch['output_tpr'].form.view(nbatch, -1))
+        # nbatch = batch['output'].form.shape[0]
+        #dist = sqeuclid_batch1(batch['output'].form.view(nbatch, -1),
+        #                         batch['target_tpr'].form.view(nbatch, -1))
         # loss = torch.mean(dist)
 
         if batch_nb == 0:
@@ -74,8 +74,8 @@ class Grammar(pl.LightningModule):
         return {'loss': loss}
 
     def validation_step(self, batch, batch_nb):
-        batch['pred'] = self.forward(batch)
-        loss, losses = self.loss_func(batch['pred'], batch['output'])
+        batch['output'] = self.forward(batch)
+        loss, losses = self.loss_func(batch['output'], batch['target'])
         print(f'dev loss: {np.round(loss.item(), 2)}')
         # todo: also calculate whole-string, levenshtein accuracy
         self.lr_sched.step(loss.item())  # xxx ReduceLROnPlateau only
@@ -141,10 +141,10 @@ class Grammar(pl.LightningModule):
     #        shuffle = False,
     #        collate_fn = morph_batcher)
 
-    def loss_func(self, pred, output):
+    def loss_func(self, output, target):
         # Decode left-to-right
-        logprobs = config.decoder(pred.form)
-        losses = self.criterion(logprobs, output.form_id)
+        logprobs = config.decoder(output.form)
+        losses = self.criterion(logprobs, target.form_id)
         # Sum losses over positions, average over batch xxx document
         loss = torch.sum(losses, dim=1)
         loss = torch.mean(loss)
@@ -171,18 +171,18 @@ class Grammar(pl.LightningModule):
 
     # # # # # Deprecated # # # # #
 
-    def risk_loss(self, pred, output):
+    def risk_loss(self, output, target):
         # Decode predictions to strings xxx use form_embedder instead
-        preds = config.decoder.decode2string(pred.form)
+        outputs = config.decoder.decode2string(output.form)
         #print(f'target outputs: {output.form_str}')
         #print(f'predicted outputs: {preds}')
         # Normalized edit distance (Makarov & Clematide 2018)
         costs = [
-            editdistance.eval(x, y) for (x, y) in zip(preds, output.form_str)
+            editdistance.eval(x, y) for (x, y) in zip(outputs, target.form_str)
         ]
         max_lens = [
             max(len(x.split()), len(y.split()))
-            for (x, y) in zip(preds, output.form_str)
+            for (x, y) in zip(outputs, target.form_str)
         ]
         #print(costs)
         #print(max_lens)
@@ -190,7 +190,7 @@ class Grammar(pl.LightningModule):
                 torch.FloatTensor(max_lens)
         #print(f'normalized edit distances: {costs}')
         costs = costs - torch.FloatTensor([x==y \
-            for (x,y) in zip(preds, output.form_str)])
+            for (x,y) in zip(outputs, target.form_str)])
         # Approximate risk
         log_prob = config.log_prob
         q = exp(log_prob)

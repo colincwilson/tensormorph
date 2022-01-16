@@ -102,8 +102,9 @@ class Phonology(nn.Module):
         match = exp(match)  # Map real-valued matches into (0,1)
 
         # Construct output tpr incrementally LR->
-        output_posn = torch.zeros(nbatch, 1)
-        output = torch.zeros(nbatch, config.dsym, config.nrole)
+        output_posn = torch.zeros((nbatch, 1), device=config.device)
+        output = torch.zeros((nbatch, config.dsym, config.nrole),
+                             device=config.device)
 
         # Input positions at which to apply phonology
         if input_posns is None:
@@ -222,7 +223,7 @@ class Phonology(nn.Module):
 
         batch = data_util.morph_batcher(config.dat_train)
         inpt = batch['stem'].form
-        cntxt = torch.zeros(inpt.shape[0], 1)
+        cntxt = torch.zeros((inpt.shape[0], 1), config.device)
 
         print('\tw_faith\t\tprop. identity')
         w_faith_tune = None
@@ -284,8 +285,9 @@ class Phonology1(nn.Module):
         ftr2 = torch.tanh(ftr2)
         w = exp(self.W(context).view(nbatch, npattern))
 
-        output_posn = torch.zeros(nbatch, 1)
-        output = torch.zeros(nbatch, config.dsym, config.nrole)
+        output_posn = torch.zeros((nbatch, 1), device=config.device)
+        output = torch.zeros((nbatch, config.dsym, config.nrole),
+                             device=config.device)
 
         for i in range(config.nrole):  # xxx extra steps
             # Pattern probabilities at input position i
@@ -427,7 +429,7 @@ class PhonoRule(nn.Module):
         voiceless = hardtanh(-1.0 * form[:, voice_indx, 1], 0.0, 1.0)
         match = obstruent * voiceless
         # Change loci
-        mask = torch.zeros_like(form, requires_grad=False)
+        mask = torch.zeros_like(form, requires_grad=False, device=config.device)
         mask[:, voice_indx, 1] = 1.0
         mask = mask * match.unsqueeze(-1).unsqueeze(-1)
         #print(torch.min(mask), torch.max(mask)); sys.exit(0)
@@ -445,7 +447,9 @@ class PhonoRule(nn.Module):
         # Locus of application
         # xxx assumes all inputs end in /a/ !
         word_final = hardtanh(form[:, 2, :], 0.0, 1.0)
-        word_final = torch.cat([word_final[:, 1:], torch.zeros(nbatch, 1)], 1)
+        word_final = torch.cat(
+            [word_final[:, 1:],
+             torch.zeros((nbatch, 1), device=config.device)], 1)
         word_final = word_final.unsqueeze(1)  # same locus for all features
 
         # Featural change
@@ -454,7 +458,9 @@ class PhonoRule(nn.Module):
         ftr_change = (ftr_O - ftr_A)
         dftr = ftr_change.shape[0]
         if dftr < dsym:  # append zeros in correspondence index slots
-            ftr_change = torch.cat([ftr_change, torch.zeros(dsym - dftr)], 0)
+            ftr_change = torch.cat(
+                [ftr_change,
+                 torch.zeros(dsym - dftr, device=config.device)], 0)
         ftr_change = ftr_change.unsqueeze(0).unsqueeze(
             -1)  # same change for all batch, posns
 

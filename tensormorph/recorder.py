@@ -91,28 +91,29 @@ def assign_node_names(module, memo=None, prefix=''):
 
 def report(grammar, batch):
     """
-    Record and report processing for first stem in batch
+    Record and report processing for first source/target pair in batch
     """
     config.recorder = Recorder()
 
     cogrammar, decoder = \
         grammar.cogrammar, config.decoder
-    stem, output, morphosyn, max_len = \
-        batch['stem'], batch['output'], batch['morphosyn'], batch['max_len']
+    source, target, morphosyn, max_len = \
+        batch['source'], batch['target'], batch['morphosyn'], batch['max_len']
     morphosyn_str = batch['morphosyn_str']
-    stem0 = Morph(
-        form=stem.form.narrow(0, 0, 1),
-        form_str=stem.form_str[0],
-        length=stem.length.narrow(0, 0, 1))
+    source0 = Morph(
+        form=source.form.narrow(0, 0, 1),
+        form_str=source.form_str[0],
+        length=source.length.narrow(0, 0, 1))
     #morphosyn0 = [x.narrow(0, 0, 1) for x in morphosyn]
     morphosyn0 = morphosyn.narrow(0, 0, 1)
     #morphospec0 = morphospec.narrow(0,0,1)
     #Stem0 = stem.form.narrow(0,0,1); Stem0.slen = Stem.slen.narrow(0,0,1)
     #Morphosyn0 = Morphosyn.narrow(0,0,1)
     #pred = grammar(batch)
-    pred = cogrammar(stem0, morphosyn0, max_len)
-    pretty_print(cogrammar, decoder, output, morphosyn_str)
-    pred2 = grammar(batch)  # xxx hack to see output for phonology-only training
+    output = cogrammar(source0, morphosyn0, max_len)
+    pretty_print(cogrammar, decoder, target, morphosyn_str)
+    output2 = grammar(
+        batch)  # xxx hack to see output for phonology-only training
     #print(pred2._str()[0])
     if cogrammar.reduplication:
         pretty_print(cogrammar.base_cogrammar, decoder)
@@ -128,7 +129,7 @@ def report(grammar, batch):
         f'tau_morph {np.round(tau_morph.item(), 2)} | tau_posn {np.round(tau_posn.item(), 2)} | tau_decode {np.round(tau_decode.item(), 2)}'
     )
     if config.phonology is not None and config.phonology != 0:
-        cntxt = torch.ones(1)
+        cntxt = torch.ones(1, device=config.device)
         w_faith = cogrammar.phonology.w_faith
         w_nochng = torch.exp(cogrammar.phonology.w_nochng(cntxt)) + w_faith
         w_nochng_min, w_nochng_max = torch.min(w_nochng), torch.max(w_nochng)
@@ -158,35 +159,35 @@ def report(grammar, batch):
     config.recorder = None
 
 
-def pretty_print(cogrammar, decoder, output=None, morphosyn_str=None):
+def pretty_print(cogrammar, decoder, target=None, morphosyn_str=None):
     """
-    Report processing for first stem in batch
+    Report processing for first source/target pair in batch
     """
     node = cogrammar.node
     print('\n**' + node + '**')
-    stem = cogrammar.stem
+    base = cogrammar.base
     affix = cogrammar.affix
-    pred = cogrammar.output
+    output = cogrammar.output
 
-    stem_str_plain = stem._str(markup=False)[0]
-    stem_str = stem._str()[0]
+    base_str_plain = base._str(markup=False)[0]
+    base_str = base._str()[0]
     morphosyn_str = '--' if morphosyn_str is None \
         else morphosyn_str[0]
     affix_str = '--' if affix is None \
         else affix._str()[0]
-    output_str = '--' if output is None \
-        else output._str()[0]
-    pred_str = pred._str()[0]
+    target_str = '--' if target is None \
+        else target._str()[0]
+    output_str = output._str()[0]
 
     print(
-        f'🌱 {stem_str_plain}    ⛈️  {morphosyn_str}    🌲 {output_str}    💡 {pred_str}'
+        f'🌱 {base_str_plain}    ⛈️  {morphosyn_str}    🌲 {target_str}    💡 {output_str}'
     )
-    print(f'stem: {stem_str}')
+    print(f'base: {base_str}')
     print(f'affix: {affix_str}')
-    print(f'pivot_stem: {np.round(stem.pivot.cpu().data.numpy()[0], 2)}')
-    print(f'pivot_affix: {np.round(affix.pivot.cpu().data.numpy()[0], 2)}')
-    print(f'copy_stem: {np.round(stem.copy.data.cpu().numpy()[0], 2)}')
-    print(f'copy_affix: {np.round(affix.copy.data.cpu().numpy()[0], 2)}')
+    print(f'base_pivot: {np.round(base.pivot.cpu().data.numpy()[0], 2)}')
+    print(f'affix_pivot: {np.round(affix.pivot.cpu().data.numpy()[0], 2)}')
+    print(f'base_copy: {np.round(base.copy.data.cpu().numpy()[0], 2)}')
+    print(f'affix_copy: {np.round(affix.copy.data.cpu().numpy()[0], 2)}')
     #print('\tWpos:', Wpos.weight[:,0]) # np.round(Wpos.numpy(), 2))
     #print('\tWneg:', Wneg.weight[:,0]) # np.round(Wneg.numpy(), 2))
     #print('copy_affix:', np.round(copy_affix.data.numpy(), 2))
@@ -211,7 +212,7 @@ def labeled_tensor(M, col_names, row_names):
     Convert 2D tensor to labeled data frame
     xxx todo: also label 1D tensors
     """
-    M = pd.DataFrame(M.data.numpy(), columns=col_names, index=row_names)
+    M = pd.DataFrame(M.cpu().data.numpy(), columns=col_names, index=row_names)
     return M
 
 

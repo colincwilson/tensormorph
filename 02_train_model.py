@@ -72,6 +72,7 @@ parser.add(
     help='use reduplication cogrammar (bool)')
 parser.add('--batch_size', type=int, default=12)
 parser.add('--max_epochs', type=int, default=20)
+parser.add('--gpus', type=int, default=0)
 
 # Config file / commandline options
 args, _ = parser.parse_known_args()

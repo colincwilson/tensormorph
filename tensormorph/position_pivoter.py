@@ -37,8 +37,8 @@ class PositionPivoter(nn.Module):
         #    self.context2w.weight.detach_()
         self.parser = SyllableParser()
 
-    def forward(self, Stem, W=None):
-        form = Stem.form
+    def forward(self, base, W=None):
+        form = base.form
         nbatch = form.shape[0]
 
         # Parse form up to syllable level
@@ -51,8 +51,12 @@ class PositionPivoter(nn.Module):
 
         # Assemble pivots (see syllable parser for element indices)
         pivots = [
-            torch.zeros(nbatch, 1, config.nrole,
-                        requires_grad=False),  # No pivot
+            torch.zeros(
+                nbatch,
+                1,
+                config.nrole,
+                requires_grad=False,
+                device=config.device),  # No pivot
             after_first[:, 0].unsqueeze(1),  # After first ⋊
             # before_last[:,1].unsqueeze(1),        # Before last ⋉
             before_first[:, 1].unsqueeze(1),  # Before first ⋉
@@ -82,7 +86,7 @@ class PositionPivoter(nn.Module):
             return pivots
 
         # Select pivot for each affix
-        pivot = einsum('bpi,ap->bai', pivots, W)
+        pivot = einsum('b p i, a p -> b a i', pivots, W)
         assert not np.any(np.isnan(pivot.cpu().data.numpy())), \
                 f'pivot value is nan: pivot = {pivot}, W={W}'
         # [nbatch x naffix x nrole]
@@ -90,10 +94,10 @@ class PositionPivoter(nn.Module):
 
     # # # # # Deprecated # # # # #
 
-    def forward1(self, Stem, context):
+    def forward1(self, base, context):
         #form = distrib2local(stem.form)
         #mask = hardtanh0(form[:,0,:])
-        form = Stem.form
+        form = base.form
         nbatch = form.shape[0]
 
         # Parse form up to syllable level
@@ -106,8 +110,12 @@ class PositionPivoter(nn.Module):
 
         # Assemble pivots (see syllable parser for element indices)
         pivots = [
-            torch.zeros(nbatch, 1, config.nrole,
-                        requires_grad=False),  # No pivot
+            torch.zeros(
+                nbatch,
+                1,
+                config.nrole,
+                requires_grad=False,
+                device=config.device),  # No pivot
             first[:, 0].unsqueeze(1),  # After first ⋊
             # before_last[:,1].unsqueeze(1),        # Before last ⋉
             before_first[:, 1].unsqueeze(1),  # Before first ⋉

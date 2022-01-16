@@ -10,14 +10,14 @@ class GaussianPool(nn.Module):
         super(GaussianPool, self).__init__()
         self.n = n  # Number of units in pool
         self.mu = torch.arange(
-            n, requires_grad=False,
-            dtype=torch.float).to(device=config.device)  # Unit centers
+            n, requires_grad=False, dtype=torch.float,
+            device=config.device)  # Unit centers
         # self.tau = Parameter(torch.zeros(1))
         if tau is not None:
-            self.tau = torch.tensor([tau])
+            self.tau = torch.tensor([tau], device=config.device)
         else:
             # tau ~ Uniform([-.5, +.5])
-            self.tau = Parameter(torch.rand(1) - 0.5)
+            self.tau = Parameter(torch.rand(1, device=config.device) - 0.5)
             #self.tau = Parameter(-2.0 * torch.ones(1))
         if tau_min is not None:
             self.tau_min = tau_min
