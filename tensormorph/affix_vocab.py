@@ -108,7 +108,7 @@ class AffixVocab(nn.Module):
         W = self.context2pivot(context)
         A = softmax(W, dim=-1)
         pivots = self.pivoter(base)
-        base_pivot = einsum('bp,bpr->br', A,
+        base_pivot = einsum('b p, b p r -> b r', A,
                             pivots)  # pivots.transpose(1,2) @ A
         #base_pivot = (1.0 - zero) * base_pivot
         base.pivot = base_pivot

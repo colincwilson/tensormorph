@@ -33,7 +33,7 @@ class Matcher3(nn.Module):
         self.trace = {}
 
         # Pad input form on both sides with epsilon filler
-        zero = torch.zeros((nbatch, m, 1))
+        zero = torch.zeros((nbatch, m, 1), device=config.device)
         _X_ = torch.cat((zero, X, zero), 2)
 
         # Apply matchers to every window of length three in input form
@@ -137,10 +137,10 @@ class LiteralMatcher(nn.Module):
 
         try:
             match_ = exp(match)
-            assert np.all((0.0 <= match_.data.numpy())
-                          & (match_.data.numpy() <= 1.0))
+            assert np.all((0.0 <= match_.cpu().data.numpy())
+                          & (match_.cpu().data.numpy() <= 1.0))
         except AssertionError as e:
-            print(match_.data.numpy())
+            print(match_.cpu().data.numpy())
             print(Wpos[0, :, :, 0])
             print(Wneg[0, :, :, 0])
             print(X)

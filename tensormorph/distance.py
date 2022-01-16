@@ -27,7 +27,7 @@ def sqeuclid_batch1(X, Y):
     """
     X_norm = torch.norm(X, p=2, dim=1)**2.0
     Y_norm = torch.norm(Y, p=2, dim=1)**2.0
-    dist = X_norm + Y_norm - 2.0 * einsum('bi,bi->b', X, Y)
+    dist = X_norm + Y_norm - 2.0 * einsum('b i, b i -> b', X, Y)
     return dist
 
 

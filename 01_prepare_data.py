@@ -10,7 +10,8 @@
 
 import pickle, re, sys
 from pathlib import Path
-import configargparse, json, yaml
+from collections import Counter
+import configargparse, yaml  # json
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -105,19 +106,25 @@ def main():
         # Data to be split into train | val | test
         data_file = data_dir / Path(args.data_file)
         print(f'Preparing data from {data_file} ...')
+
         data = pd.read_table(
             data_file, comment='#', sep=args.delim, engine='python')
+
         if len(data.columns) > 3:
             data = data[data.columns[0:3]]
+
         if len(data.columns) < 3:
             data['morphosyn'] = 'lgspec'
+
         data.columns = colnames
+
         for key in colnames:
             data[key] = data[key].str.strip()
+
         split_flag = True
-        if (data['source'][0] == 'source' \
-            or data['target'][0] == 'target'
-            or data['morphosyn'][0] == 'morphosyn'):
+
+        if (data['source'][0] == 'source' or data['target'][0] == 'target' or
+                data['morphosyn'][0] == 'morphosyn'):
             print('Warning: first row of data appears to be header')
     else:
         # Pre-split train | (val) | test
@@ -157,6 +164,7 @@ def main():
             engine='python')
         data_test['split'] = 'test'
 
+        # Train + val + test
         data = pd.concat([data_train, data_val, data_test], 0)
         split_flag = False
 
@@ -167,7 +175,7 @@ def main():
     max_len = np.max([len(x) for x in data['source']] +
                      [len(x) for x in data['target']])
     print(data.head())
-    print(f'Maximum source and target length: {max_len}')
+    print(f'Maximum source or target length: {max_len}')
     print()
 
     # Restructure data
@@ -179,10 +187,11 @@ def main():
     }
 
     # Collect segments from source and target forms prior to string ops
-    if not args.split_strings:
-        segs = segments(dats, args, sep='')
-        print(f'Segments: {segs}')
-        print()
+    segs, seg_freqs = segments(data, args)
+    print(f'Segments in the original data: {seg_freqs}')
+    print()
+    #if not args.split_strings:
+    #    segs, seg_freqs = segments(dats, args, sep='')
 
     # Apply string ops
     if args.held_in_source is not None:
@@ -207,6 +216,11 @@ def main():
                 dats[key] = [re.sub(s, r, x) for x in val]
         print()
 
+    # Eliminate multiple spaces
+    for key, val in dats.items():
+        dats[key] = [re.sub('[ ]+', ' ', x) for x in val]
+
+    # Restructure data
     data['source'] = dats['source']
     data['target'] = dats['target']
     data['source_len'] = [len(x.split()) for x in dats['source']]
@@ -230,9 +244,11 @@ def main():
     print()
 
     # Collect segments from source and target forms
-    segs = segments(data, args)
-    print(f'Segments in the modified data: {segs}')
+    segs, seg_freqs = segments(data, args)
+    print(f'Segments in the modified data: {seg_freqs}')
     print()
+
+    # todo: warn if segments do not appear in Hayes feature matrix?
 
     # Dataset prior to split
     dataset = {
@@ -281,28 +297,41 @@ def main():
         data_pkl = Path(args.data_file).with_suffix('.pkl')
         split_file = Path(args.data_file).with_suffix('')
     pickle.dump(dataset, open(data_dir / data_pkl, 'wb'))
+
     data_train.to_csv(
         data_dir / Path(f'{split_file.name}_train.csv'), index=False)
     data_val.to_csv(\
         data_dir / Path(f'{split_file.name}_val.csv'), index=False)
     data_test.to_csv(
         data_dir / Path(f'{split_file.name}_test.csv'), index=False)
+
     return dataset
 
 
 def segments(data, args, sep=' '):
     """
-    Unique segments in source and target forms
+    Unique segments in source and target forms, and segment frequency counts
     """
-    vowels = args.vowels
-    segments = set(vowels)
+    segments = set()
+    segment_freqs = Counter()
+
+    if args.vowels is not None:
+        segments |= set(args.vowels)
+
     for source in data['source']:
-        segments |= set(source.split(sep)) if sep != '' else set(source)
+        segments1 = source.split(sep) if sep != '' else source
+        segments |= set(segments1)
+        segment_freqs.update(segments1)
+
     for target in data['target']:
-        segments |= set(target.split(sep)) if sep != '' else set(target)
+        segments1 = source.split(sep) if sep != '' else source
+        segments |= set(segments1)
+        segment_freqs.update(segments1)
+
     segments = [x for x in segments]
     segments.sort()
-    return (segments)
+
+    return segments, segment_freqs
 
 
 def split_data(dataset, data_prop, val_prop, test_prop):

@@ -112,7 +112,8 @@ class MultiCogrammar(nn.Module):
             phon_form = morph_form = output.form
             # Phonology applies persistently (2x)
             for i in range(1):
-                phon_form = self.phonology(phon_form, torch.zeros(nbatch, 1))
+                phon_form = self.phonology(
+                    phon_form, torch.zeros(nbatch, 1, device=config.device))
             # Highway connection from output of morphology
             # morphology_hwy = sigmoid(self.morphology_hwy)  # xxx bias?
             #output.form = morphology_hwy * morph_form + \

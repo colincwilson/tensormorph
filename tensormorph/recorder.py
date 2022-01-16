@@ -129,7 +129,7 @@ def report(grammar, batch):
         f'tau_morph {np.round(tau_morph.item(), 2)} | tau_posn {np.round(tau_posn.item(), 2)} | tau_decode {np.round(tau_decode.item(), 2)}'
     )
     if config.phonology is not None and config.phonology != 0:
-        cntxt = torch.ones(1)
+        cntxt = torch.ones(1, device=config.device)
         w_faith = cogrammar.phonology.w_faith
         w_nochng = torch.exp(cogrammar.phonology.w_nochng(cntxt)) + w_faith
         w_nochng_min, w_nochng_max = torch.min(w_nochng), torch.max(w_nochng)

@@ -86,7 +86,7 @@ class PositionPivoter(nn.Module):
             return pivots
 
         # Select pivot for each affix
-        pivot = einsum('bpi,ap->bai', pivots, W)
+        pivot = einsum('b p i, a p -> b a i', pivots, W)
         assert not np.any(np.isnan(pivot.cpu().data.numpy())), \
                 f'pivot value is nan: pivot = {pivot}, W={W}'
         # [nbatch x naffix x nrole]
