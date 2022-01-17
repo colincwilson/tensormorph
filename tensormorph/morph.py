@@ -12,8 +12,6 @@ class MorphOp(nn.Module):
     """
     Morph combination and truncation with hierarchical attention
     note: no trainable parameters
-    todo: possibly make read()/write() member funcs of Morph, for scaling 
-    to combinations of > 2 morphs (e.g., softmax over affix vocab)
     """
 
     def __init__(self):
@@ -40,8 +38,8 @@ class MorphOp(nn.Module):
             morph_state = {'morph_indx': morph_indx, 'morph_attn': morph_attn}
 
             # Read filler, pivot, copy from stem, affix
-            base_state = self.read(base, base_posn)
-            affix_state = self.read(affix, affix_posn)
+            base_state = base.read(base_posn)
+            affix_state = affix.read(affix_posn)
 
             # Convex combo of filler and copy from stem, affix
             fill = base_attn * base_state['filler'] \
@@ -50,8 +48,7 @@ class MorphOp(nn.Module):
                     + affix_attn * affix_state['copy']
 
             # Write to output
-            output_state = \
-                self.write(output, output_posn, fill, copy)
+            output_state = output.write(fill, copy, output_posn)
 
             # Trace internal processing
             self.update_trace(morph_state, base_state, affix_state,
@@ -74,51 +71,6 @@ class MorphOp(nn.Module):
 
         return output
 
-    def read(self, morph, posn):
-        """
-        Read (unbind) attributes of morph at soft position
-        """
-        # Map scalar position to attention over positions
-        posn_attn = config.posn_attender(posn)
-
-        # Read (unbind) current filler, pivot, copy
-        f = attn_unbind(morph.form, posn_attn)
-        p = attn_unbind(morph.pivot, posn_attn)
-        c = attn_unbind(morph.copy, posn_attn)
-
-        state = {
-            'posn': posn,
-            'posn_attn': posn_attn,
-            'filler': f,
-            'pivot': p,
-            'copy': c
-        }
-        return state
-
-    def write(self, morph, posn, f, c):
-        """
-        Write (bind) filler f or epsilon to  
-        soft position in morph
-        """
-        # Map scalar position to attention
-        posn_attn = config.posn_attender(posn)
-        self.attn_total = self.attn_total + posn_attn
-
-        # Accumulate f/r binding -or- epsilon
-        f = c * f
-        morph.form, r = \
-            attn_bind(morph.form, f, posn_attn)
-
-        state = {
-            'posn': posn,
-            'posn_attn': posn,
-            'fill': f,
-            'role': r,
-            'copy': c
-        }
-
-        return state
-
     def reset(self, base, affix):
         """
         Initialize/reset output, morph_indx, morph posns, trace 
@@ -135,8 +87,8 @@ class MorphOp(nn.Module):
                             requires_grad=True,
                             device=config.device))
         # Track total attention to output roles over write steps
-        self.attn_total = 1.0e-7 * torch.ones(
-            (nbatch, config.nrole), requires_grad=True, device=config.device)
+        #self.attn_total = 1.0e-7 * torch.ones(
+        #    (nbatch, config.nrole), requires_grad=True, device=config.device)
         # xxx experimental
         #setattr(self, 'affix_posn', affix.begin)
         return output
@@ -161,9 +113,8 @@ class MorphOp(nn.Module):
 class Morph(nn.Module):
     """
     Container for form embedding matrix, form symbol ids, 
-    pivot and copy vectors, and other attributes of batch
-    and other attributes of a batch of morphs
-    (alternative to binding as composite tpr)
+    pivot and copy vectors, and other attributes of a batch
+    of morphs (alternative to binding into composite tpr)
     note: no trainable parameters, null forward()
     """
 
@@ -185,6 +136,49 @@ class Morph(nn.Module):
 
     def forward(self):
         return None
+
+    def read(self, posn):
+        """
+        Read (unbind) attributes of this morph at scalar position
+        """
+        # Map scalar position to attention over positions
+        posn_attn = config.posn_attender(posn)
+
+        # Read (unbind) current filler, pivot, copy
+        f = attn_unbind(self.form, posn_attn)
+        p = attn_unbind(self.pivot, posn_attn)
+        c = attn_unbind(self.copy, posn_attn)
+
+        state = {
+            'posn': posn,
+            'posn_attn': posn_attn,
+            'filler': f,
+            'pivot': p,
+            'copy': c
+        }
+        return state
+
+    def write(self, f, c, posn):
+        """
+        Write (bind) filler f (possibly epsilon) to this morph at scalar position
+        """
+        # Map scalar position to attention
+        posn_attn = config.posn_attender(posn)
+        #self.attn_total = self.attn_total + posn_attn
+
+        # Accumulate f/r binding -or- epsilon
+        self.form, r = \
+            attn_bind(self.form, c * f, posn_attn)
+
+        state = {
+            'posn': posn,
+            'posn_attn': posn,
+            'fill': f,
+            'role': r,
+            'copy': c
+        }
+
+        return state
 
     def _str(self, markup=True, trim=True):
         """
