@@ -48,7 +48,9 @@ class MorphOp(nn.Module):
                     + affix_attn * affix_state['copy']
 
             # Write to output
-            output_state = output.write(fill, copy, output_posn)
+            output_state = output.write(fill * copy, output_posn)
+            output_state['fill'] = fill
+            output_state['copy'] = copy
 
             # Trace internal processing
             self.update_trace(morph_state, base_state, affix_state,
@@ -59,7 +61,7 @@ class MorphOp(nn.Module):
                 + base_attn * base_state['pivot'] \
                 - affix_attn * affix_state['pivot']
 
-            # Update scalar positions within morphs,
+            # Update scalar positions within morphs, monotonically
             # advancing in fractions of unit steps
             base_posn = base_posn + base_attn * 1.0
             affix_posn = affix_posn + affix_attn * 1.0
@@ -145,37 +147,36 @@ class Morph(nn.Module):
         posn_attn = config.posn_attender(posn)
 
         # Read (unbind) current filler, pivot, copy
-        f = attn_unbind(self.form, posn_attn)
-        p = attn_unbind(self.pivot, posn_attn)
-        c = attn_unbind(self.copy, posn_attn)
+        fill = attn_unbind(self.form, posn_attn)
+        pivot = attn_unbind(self.pivot, posn_attn)
+        copy = attn_unbind(self.copy, posn_attn)
 
         state = {
             'posn': posn,
             'posn_attn': posn_attn,
-            'filler': f,
-            'pivot': p,
-            'copy': c
+            'filler': fill,
+            'pivot': pivot,
+            'copy': copy
         }
         return state
 
-    def write(self, f, c, posn):
+    def write(self, fill, posn):
         """
-        Write (bind) filler f (possibly epsilon) to this morph at scalar position
+        Write (bind) filler (possibly epsilon) to this morph at scalar position
         """
         # Map scalar position to attention
         posn_attn = config.posn_attender(posn)
         #self.attn_total = self.attn_total + posn_attn
 
-        # Accumulate f/r binding -or- epsilon
-        self.form, r = \
-            attn_bind(self.form, c * f, posn_attn)
+        # Accumulate binding into form
+        self.form, role = \
+            attn_bind(self.form, fill, posn_attn)
 
         state = {
             'posn': posn,
-            'posn_attn': posn,
-            'fill': f,
-            'role': r,
-            'copy': c
+            'posn_attn': posn_attn,
+            'fill': fill,
+            'role': role
         }
 
         return state
