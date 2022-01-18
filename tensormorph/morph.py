@@ -61,8 +61,7 @@ class MorphOp(nn.Module):
                 + base_attn * base_state['pivot'] \
                 - affix_attn * affix_state['pivot']
 
-            # Update scalar positions within morphs, monotonically
-            # advancing in fractions of unit steps
+            # Update scalar positions within morphs monotonically
             base_posn = base_posn + base_attn * 1.0
             affix_posn = affix_posn + affix_attn * 1.0
             output_posn = output_posn + copy * 1.0
@@ -116,7 +115,8 @@ class Morph(nn.Module):
     """
     Container for form embedding matrix, form symbol ids, 
     pivot and copy vectors, and other attributes of a batch
-    of morphs (alternative to binding into composite tpr)
+    of morphs (alternative to binding into composite tpr).
+    Provides random-access scalar position read() and write().
     note: no trainable parameters, null forward()
     """
 
@@ -141,7 +141,7 @@ class Morph(nn.Module):
 
     def read(self, posn):
         """
-        Read (unbind) attributes of this morph at scalar position
+        Read (unbind) attributes of this morph at scalar position.
         """
         # Map scalar position to attention over positions
         posn_attn = config.posn_attender(posn)
@@ -162,7 +162,7 @@ class Morph(nn.Module):
 
     def write(self, fill, posn):
         """
-        Write (bind) filler (possibly epsilon) to this morph at scalar position
+        Write (bind) filler to this morph at scalar position.
         """
         # Map scalar position to attention
         posn_attn = config.posn_attender(posn)

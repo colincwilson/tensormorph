@@ -3,10 +3,10 @@
 # Provides batch binding and unbinding (i.e., query) operations on TPRs
 # and various convenience methods (e.g., normalization, sequence masking).
 # Conventions:
-# * Operations apply to batches unless otherwise indicated
-# * Batch corresponds to *first* index in all inputs and outputs
+# - Batch corresponds to *first* index in all inputs and outputs
 #   (see https://discuss.pytorch.org/t/how-to-repeat-a-vector-batch-wise)
-# todo: convert ops to einsum
+# - Operations apply to batches unless otherwise indicated
+# todo: convert to einsum / einops
 
 import os, pickle, re, sys
 import numpy as np
@@ -40,7 +40,8 @@ def bdot(X, Y):
     [https://discuss.pytorch.org/t/dot-product-batch-wise/9746/11]
     """
     #Z = (X * Y).sum(-1, keepdim=True)
-    Z = einsum('b i, b i -> b', X, Y).unsqueeze(-1)
+    Z = einsum('b i, b i -> b', X, Y)  #.unsqueeze(-1)
+    Z = rearrange(Z, 'b -> b ()')
     #print(X.shape, Y.shape, Z.shape); sys.exit(0)
     return Z
 
@@ -49,13 +50,18 @@ def bmatvec(X, v):
     """
     Batch matrix-vector multiplication 
     """
-    val = torch.matmul(X, v.unsqueeze(-1))
-    val = val.squeeze(-1)
-    #print(X.shape, v.shape, val.shape); sys.exit(0)
+    # Add batch index to X if necessary
+    if len(X.shape) == 2:
+        X = rearrange(X, 'i j -> () i j')
+    #Z = torch.matmul(X, v.unsqueeze(-1))
+    #Z = val.squeeze(-1)
+    #print(X.shape, v.shape)
+    #raise 'error'
+    Z = einsum('b i j, b j -> b i', X, v)
     # val = einsum('b...j,bj->b...', X, v) # xxx fix me
     #val = X * v.unsqueeze(1)
     #val = torch.sum(val,-1)
-    return val
+    return Z
 
 
 def bscalmat(a, X):
