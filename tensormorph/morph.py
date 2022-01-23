@@ -116,7 +116,7 @@ class Morph(nn.Module):
     Container for form embedding matrix, form symbol ids, 
     pivot and copy vectors, and other attributes of a batch
     of morphs (alternative to binding into composite tpr).
-    Provides random-access scalar position read() and write().
+    Random-access read() and write() for real-valued positions.
     note: no trainable parameters, null forward()
     """
 

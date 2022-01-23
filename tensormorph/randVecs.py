@@ -11,10 +11,10 @@ def randvecs(n=None,
              nonnegative=False,
              scale=1.0):
     """
-    Create random vectors using one of the methods below.
+    Generate random column vectors with one of the methods below.
     Args:
         n (int): Number of random vectors to create.
-        dim (int, optional): Dimensionality of reach random vector (== n if omitted).
+        dim (int, optional): Dimensionality of reach random vector (equal to n if omitted).
         sim (matrix, optional): Specified similarity matrix (n x n).
         sphere (boolean, optional): Vectors randomly generated on the unit sphere.
         nonnegative (boolean, optional): All vector elements constrained to be nonnegative.
@@ -32,7 +32,8 @@ def randvecs(n=None,
 
 def randvecs_sim(n, dim, sim, lb=-1.0, ub=1.0, scale=False):
     """
-    Create random vectors (columns) with specified similarity values.
+    Generate n random column vectors with dimensionality dim 
+    and specified similarity values.
     Args:
         n (int): Number of random vectors to create.
         dim (int): Dimensionality of each random vector.
@@ -71,18 +72,21 @@ def randvecs_sim2(n, dim, dpMatrix, lb=-1.0, ub=1.0, scale=True):
     return M
 
 
-def randvecs_sphere(N, dim, nonnegative=False):
+def randvecs_sphere(n, dim, nonnegative=False):
     """
-    Generate n unit-length vectors on surface of sphere S^dim, 
+    Generate n unit-length column vectors on surface of sphere S^dim, 
     optionally requiring all elements to be non-negative, 
     and verify linear independence by inversion.
     See among others https://stats.stackexchange.com/questions/7977/how-to-generate-uniformly-distributed-points-on-the-surface-of-the-3-d-unit-sphe
     """
-    M = np.random.randn(dim, N)
+    M = np.random.randn(dim, n)
     if nonnegative:
         M = np.abs(M)
     M /= np.linalg.norm(M, axis=0)
-    M_inv = np.linalg.inv(M)
+    try:
+        M_inv = np.linalg.inv(M)
+    except:
+        print('Could not invert matrix of random vectors')
     #print(M.T @ M)
     #print(np.round(M.T @ M_inv.T, 5))
     return M
