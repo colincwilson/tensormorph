@@ -170,10 +170,16 @@ def main():
 
     print('Original data')
     data = data.dropna(how='all').reset_index(drop=True)
+    data = data[(~(data['target'] == '')
+                 & ~(data['source'] == '')
+                 & ~(data['morphosyn'] == ''))]
     data = data.drop_duplicates().reset_index(drop=True)
     data.reset_index()
-    max_len = np.max([len(x) for x in data['source']] +
-                     [len(x) for x in data['target']])
+    source_len = [len(x) for x in data['source']]
+    target_len = [len(x) for x in data['target']]
+    max_len = np.max(source_len + target_len)
+    #max_len = np.max([len(x) for x in data['source']] +
+    #                 [len(x) for x in data['target']])
     print(data.head())
     print(f'Maximum source or target length: {max_len}')
     print()
