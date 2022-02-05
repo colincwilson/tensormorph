@@ -57,6 +57,16 @@ def init(args):
     config.fdata = Path(config.data_dir) / args.data_pkl
     with open(config.fdata, 'rb') as f:
         data = pickle.load(f)
+    # xxx Fix deprecated column names
+    column_fix = {
+        'stem': 'source',
+        'output': 'target',
+        'stem_len': 'source_len',
+        'output_len': 'target_len'
+    }
+    for split in ['train', 'val', 'test']:
+        data[f'data_{split}'] = data[f'data_{split}'].rename(columns=column_fix)
+    # xxx
     config.data = data
     print(f"\ntrain {len(data['data_train'])} "
           f"| val {len(data['data_val'])} "
