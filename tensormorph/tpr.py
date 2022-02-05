@@ -51,7 +51,7 @@ def bmatvec(X, v):
     Batch matrix-vector multiplication 
     """
     # Add batch index to X if necessary
-    if len(X.shape) == 2:
+    if X.dim() == 2:
         X = rearrange(X, 'i j -> () i j')
     #Z = torch.matmul(X, v.unsqueeze(-1))
     #Z = val.squeeze(-1)
@@ -66,30 +66,37 @@ def bmatvec(X, v):
 
 def bscalmat(a, X):
     """
-    Multiply one- or two-dim X[i] by scalar a[i] 
-    for each batch member i
+    Multiply one- or two-dim X[b] by scalar a[b] 
+    for each batch index b
     """
-    if len(X.shape) == 2:
-        val = a.view(-1, 1) * X
-    elif len(X.shape) == 3:
-        val = a.view(-1, 1, 1) * X
+    if X.dim() == 2:
+        a = rearrange(a, 'b -> b ()')
+        val = a * X
+        #val = a.view(-1, 1) * X
+    elif X.dim() == 3:
+        a = rearrange(a, 'b -> b () ()')
+        val = a * X
+        #val = a.view(-1, 1, 1) * X
     return val
 
 
-def bind(X, f, r):
+def bind(X, fill, role):
     """
-    Add filler/role binding (outer product) to X
+    Add filler/role binding (tensor product) to X
+    https://discuss.pytorch.org/t/batch-outer-product/4025
     """
-    X = X + torch.bmm(f.unsqueeze(2), r.unsqueeze(1))
+    X = X + einsum('b i, b j -> b i j', fill, role)
+    #X = X + torch.bmm(fill.unsqueeze(2), role.unsqueeze(1))
     return X
 
 
-def unbind(X, r):
+def unbind(X, role):
     """
-    Unbind/query filler from X using discrete or gradient role r
+    Unbind/query filler from X using discrete or gradient role
     """
-    f = bmatvec(X, r)
-    return f
+    fill = einsum('b i j, b j -> b i', X, role)
+    #fill = bmatvec(X, role)
+    return fill
 
 
 def attn_bind(X, f, attn):
@@ -107,12 +114,12 @@ def attn_unbind(X, attn):
     """
     Unbind/query filler from X using attention distribution attn over roles
     """
-    if len(X.shape) > 2:
+    if X.dim() > 2:
         # Map attention distribution to role dual
         u = bmatvec(config.U, attn)
         # Unbind filler
         return unbind(X, u)
-    if len(X.shape) > 1:
+    if X.dim() > 1:
         # Unbind entry from vector
         # (assumes localist repn)
         return bdot(X, attn)
@@ -241,7 +248,7 @@ def apply_mask(X, mask=None):
     """
     if mask is None:
         return X
-    if len(mask.shape) < len(X.shape):
+    if mask.dim() < X.dim():
         mask = mask.unsqueeze(1)  # Broadcast over features
     return X * mask
 
